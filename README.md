@@ -14,6 +14,7 @@ Collection of custom functions to be used as a library for Bash scripts.
     * Check if command exists
 
 * Device validation
+    * Check for current OS and OS kernel, and Package Manager. (needs work)
     * Test network connection (URL and DNS)
 
 * File operation
