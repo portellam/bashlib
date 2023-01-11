@@ -13,6 +13,7 @@
     declare -gir int_errorCode_dirIsNull=253
     declare -gir int_errorCode_fileIsNull=252
     declare -gir int_errorCode_varIsNAN=251
+    declare -gi int_exitCode="$?"
     declare -gr str_prefix_error="\e[33mError:\e[0m"
     declare -gr str_prefix_fail="\e[31mFailure:\e[0m"
     declare -gr str_prefix_pass="\e[32mSuccess:\e[0m"
@@ -20,8 +21,63 @@
     declare -gr str_output_varIsNotValid="${str_prefix_error} Invalid input."
 # </params>
 
-# <summary> Validation functions </summary>
+# <summary> Important </summary>
 # <code>
+    # <summary> Append Pass or Fail given exit code. If Fail, call SaveExitCode. </summary>
+    # <returns> output statement </returns>
+    function AppendPassOrFail
+    {
+        case "$?" in
+            0)
+                echo -e "\e[32mPassed.\e[0m"
+                return 0;;
+            *)
+                SaveExitCode
+                echo -e "\e[31mFailed.\e[0m"
+                return $int_exitCode;;
+        esac
+    }
+
+    # <summary> Save last exit code. </summary>
+    # <param name="$int_exitCode"> the exit code </param>
+    # <returns> void </returns>
+    function SaveExitCode
+    {
+        int_exitCode="$?"
+    }
+
+# </code>
+
+# <summary> Input validation </summary>
+# <code>
+    # <summary> Check if the command is installed. </summary>
+    # <param name="$1"> the command </param>
+    # <returns> exit code </returns>
+    #
+    function CheckIfCommandIsInstalled
+    {
+        # <params>
+        local readonly str_output_dirIsNull="${str_prefix_error} Command '$1' is not installed."
+        # </params>
+
+        # <summary> Nested validation </summary>
+        CheckIfVarIsValid $1 &> /dev/null
+
+        if [[ "$?" -ne 0 ]]; then
+            return $?
+        fi
+
+        # <summary> main </summary>
+        CheckIfVarIsValid $( command -v $1 ) &> /dev/null
+
+        if [[ "$?" -ne 0 ]]; then
+            echo -e $str_output_dirIsNull
+            return $int_errorCode_dirIsNull
+        fi
+
+        return
+    }
+
     # <summary> Check if the value is valid. </summary>
     # <param name="$1"> the value </param>
     # <returns> exit code </returns>
@@ -127,7 +183,30 @@
     }
 # </code>
 
-# <summary> File operation functions </summary>
+# <summary> Device validation </summary>
+# <code>
+    # <summary> Test network connection to Internet. Ping DNS servers by address and name. </summary>
+    # <returns> exit code </returns>
+    function TestNetwork
+    {
+        echo -en "Testing Internet connection...\t"
+        ( ping -q -c 1 8.8.8.8 &> /dev/null || ping -q -c 1 1.1.1.1 &> /dev/null ) || false
+        AppendPassOrFail
+
+        echo -en "Testing connection to DNS...\t"
+        ( ping -q -c 1 www.google.com &> /dev/null && ping -q -c 1 www.yandex.com &> /dev/null ) || false
+        AppendPassOrFail
+
+        if [[ $int_exitCode -ne 0 ]]; then
+            echo -e "Failed to ping Internet/DNS servers. Check network settings or firewall, and try again."
+            return $int_exitCode
+        fi
+
+        SaveExitCode; return 0
+    }
+# </code>
+
+# <summary> File operation </summary>
 # <code>
     # <summary> Create a directory. </summary>
     # <param name="$1"> the directory </param>
@@ -241,7 +320,7 @@
     }
 # </code>
 
-# <summary> User input functions </summary>
+# <summary> User input </summary>
 # <code>
     # <summary> Ask user Yes/No, read input and return exit code given answer. </summary>
     # <param name="$1"> the (nullable) output statement </param>
@@ -561,5 +640,10 @@
 
 # DeleteFile $str
 # echo "$?"
+
+# TestNetwork                                                   # works as intended
+
+CheckIfCommandIsInstalled "apt"
+CheckIfCommandIsInstalled "windows-nt"
 
 exit 0
