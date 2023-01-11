@@ -13,12 +13,14 @@
     declare -gir int_errorCode_dirIsNull=253
     declare -gir int_errorCode_fileIsNull=252
     declare -gir int_errorCode_varIsNAN=251
+    declare -gir int_errorCode_cmdIsNull=251
     declare -gi int_exitCode="$?"
     declare -gr str_prefix_error="\e[33mError:\e[0m"
     declare -gr str_prefix_fail="\e[31mFailure:\e[0m"
     declare -gr str_prefix_pass="\e[32mSuccess:\e[0m"
     declare -gr str_prefix_warn="\e[33mWarning:\e[0m"
     declare -gr str_output_varIsNotValid="${str_prefix_error} Invalid input."
+    local declare -gl str_packageManager=""
 # </params>
 
 # <summary> Important </summary>
@@ -57,7 +59,7 @@
     function CheckIfCommandIsInstalled
     {
         # <params>
-        local readonly str_output_dirIsNull="${str_prefix_error} Command '$1' is not installed."
+        local readonly str_output_cmdIsNull="${str_prefix_error} Command '$1' is not installed."
         # </params>
 
         # <summary> Nested validation </summary>
@@ -71,8 +73,8 @@
         CheckIfVarIsValid $( command -v $1 ) &> /dev/null
 
         if [[ "$?" -ne 0 ]]; then
-            echo -e $str_output_dirIsNull
-            return $int_errorCode_dirIsNull
+            echo -e $str_output_cmdIsNull
+            return $int_errorCode_cmdIsNull
         fi
 
         return
@@ -185,6 +187,105 @@
 
 # <summary> Device validation </summary>
 # <code>
+    # <summary> Check if current kernel and distro are supported, and if the expected Package Manager is installed. </summary>
+    # <returns> exit code </returns>
+    function CheckLinuxDistro
+    {
+        # <params>
+        local declare -lr str_kernel=$( uname -o )
+        local declare -lr str_OS=$( lsb_release -is )
+        # local declare -gl str_packageManager=""
+
+        local readonly str_output_distroIsNotValid="${str_prefix_error} Distribution '${str_OS}' is not supported."
+        local readonly str_output_kernelIsNotValid="${str_prefix_error} Kernel '${str_kernel}' is not supported."
+
+        local declare -alr arr_packageManagers=(
+            "apt"
+            "dnf yum"
+            "pacman"
+            "portage"
+            "urpmi"
+            "zypper"
+        )
+
+        local declare -alr arr_sortOS_byPackageManager=(
+            # apt       (debian)
+            "debian bodhi deepin knoppix mint peppermint pop ubuntu kubuntu lubuntu xubuntu "
+
+            # dnf/yum   (redhat)
+            "redhat berry centos cern clearos elastix fedora fermi frameos mageia opensuse oracle scientific suse"
+
+            # pacman    (arch)
+            "arch manjaro"
+
+            # # portage   (gentoo)
+            # "gentoo"
+
+            # # urpmi     (openSUSE)
+            # "opensuse"
+
+            # # zypper
+            # "mandriva mageia"
+        )
+        # </params>
+
+        # <summary> Nested validation </summary>
+        while [[ "$?" -eq 0 ]]; do
+            CheckIfVarIsValid $str_kernel &> /dev/null
+            CheckIfVarIsValid $str_OS &> /dev/null
+            break
+        done
+
+        if [[ "$?" -ne 0 ]]; then
+            return $?
+        fi
+
+        if [["${str_kernel}" != *"linux"* ]]; then
+            echo -e $str_output_kernelIsNotValid
+            return 1
+        fi
+
+        # <summary> Match the package manager with the current distro. If it is installed, return true. Else, false. </summary>
+        for var_key in ${!arr_sortOS_byPackageManager[@]}; do
+            local var_element1=${arr_sortOS_byPackageManager[$var_key]}
+            local bool=false
+
+            if [[ "${str_OS}" == "${var_element1}" ]]; then
+                bool=true
+            fi
+
+            while [[ $bool == true ]]; do
+                local declare -i int_delimiter=1
+                local var_element2=$( echo ${arr_packageManagers[$var_key]} | cut -d ' ' -f $int_delimiter )
+
+                CheckIfVarIsValid $var_element2
+
+                if [[ "$?" -ne 0 ]]; then
+                    bool=false
+                fi
+
+                CheckIfCommandIsInstalled $var_element2
+
+                if [[ "$?" -eq 0 ]]; then
+                    str_packageManager=$var_element2
+                    (return 0); break
+                fi
+
+                $(( int_delimiter++ ))
+                (return 1)
+            done
+
+            (return 1)
+        done
+
+        if [[ "$?" -ne 0 ]]; then
+            echo -e $str_output_distroIsNotValid
+            return 1
+        fi
+
+        return
+    }
+
     # <summary> Test network connection to Internet. Ping DNS servers by address and name. </summary>
     # <returns> exit code </returns>
     function TestNetwork
@@ -643,7 +744,9 @@
 
 # TestNetwork                                                   # works as intended
 
-CheckIfCommandIsInstalled "apt"
-CheckIfCommandIsInstalled "windows-nt"
+# CheckIfCommandIsInstalled "apt"                               # works as intended
+# CheckIfCommandIsInstalled "windows-nt"
+
+CheckLinuxDistro        # not working
 
 exit 0
