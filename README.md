@@ -2,11 +2,19 @@
 Collection of custom functions to be used as a library for Bash scripts.
 
 ## Functions
+* Important
+    * Append a Pass or Fail given return code. Call this function inside another function.
+    * Save last exit return code, for semi-permanence in verbose functions.
+
 * Input validation
     * Check if variable is null or empty
-    * Check if var is valid numeral
+    * Check if number is valid
     * Check if directory exists
     * Check if file exists
+    * Check if command exists
+
+* Device validation
+    * Test network connection (URL and DNS)
 
 * File operation
     * Create directory
