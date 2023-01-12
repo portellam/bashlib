@@ -37,15 +37,15 @@
 
 # <summary> Toggle Debug </summary>                             # not working
 # <params>
-    declare -g bool_debug_is_enabled=false
+    declare -g bool_is_enabled_debug=false
 # </params>
 # <code>
     # <summary> Append debug </summary>
-    # <param name="$bool_debug_is_enabled"> the toggle </param>
+    # <param name="$bool_is_enabled_debug"> the toggle </param>
     # <returns> void</returns>
     function ExecuteDebug
     {
-        if [[ $bool_debug_is_enabled == true ]]; then
+        if [[ $bool_is_enabled_debug == true ]]; then
             "$@"
         else
             "$@" >/dev/null 2>&1
@@ -70,6 +70,23 @@
         esac
     }
 
+    # <summary> Check if current user is sudo or root. </summary>
+    # <returns> void </returns>
+    function CheckIfUserIsRoot
+    {
+        # <params>
+        local readonly str_file=$( basename $0 )
+        local readonly str_output_user_is_not_root="${var_prefix_warn} User is not Sudo/Root.\nIn terminal, run:\n\t'sudo bash ${str_file1}'"
+        # </params>
+
+        if [[ $( whoami ) != "root" ]]; then
+            echo -e $str_output_user_is_not_root
+            return 1
+        fi
+
+        return 0
+    }
+
     # <summary> Save last exit code. </summary>
     # <param name="$int_exit_code"> the exit code </param>
     # <returns> void </returns>
@@ -92,7 +109,6 @@
         local readonly str_output_cmd_is_null="${var_prefix_error} Command '$1' is not installed."
         # </params>
 
-        # <summary> Validation </summary>
         if ! CheckIfVarIsValid $1; then
             return $?
         fi
@@ -139,12 +155,10 @@
         local readonly str_output_var_is_NAN="${var_prefix_error} NaN."
         # </params>
 
-        # <summary> Validation </summary>
         if ! CheckIfVarIsValid $1; then
             return $?
         fi
 
-        # <summary> main </summary>
         case $1 in
             ''|*[!0-9]*)
                 echo -e $str_output_var_is_NAN
@@ -165,12 +179,10 @@
         local readonly str_output_dir_is_null="${var_prefix_error} Directory '$1' does not exist."
         # </params>
 
-        # <summary> Validation </summary>
         if ! CheckIfVarIsValid $1; then
             return $?
         fi
 
-        # <summary> main </summary>
         if [[ ! -d "$1" ]]; then
             echo -e $str_output_dir_is_null
             return $int_code_dir_is_null
@@ -189,12 +201,10 @@
         local readonly str_output_file_is_null="${var_prefix_error} File '$1' does not exist."
         # </params>
 
-        # <summary> Validation </summary>
         if ! CheckIfVarIsValid $1; then
             return $?
         fi
 
-        # <summary> main </summary>
         if [[ ! -e "$1" ]]; then
             echo -e $str_output_file_is_null
             return $int_code_file_is_null
@@ -248,7 +258,6 @@
         )
         # </params>
 
-        # <summary> Validation </summary>
         if ! CheckIfVarIsValid $str_kernel; then
             return $?
         fi
@@ -262,26 +271,52 @@
             return 1
         fi
 
-        # <summary> Match the package manager with the current distro. If it is installed, return true. Else, false. </summary>
-        for var_key in ${!arr_sort_OS_by_package_manager[@]}; do
-            local int_max_count=$( expr ${#arr_package_managers[@]} - 1 )
-            local var_element1=${arr_sort_OS_by_package_manager[$var_key]}
+        ### new ###
+        # function GetPackageManagerForOS
+        # {
+        #     local int_max_count=$( expr ${#arr_package_managers[@]} - 1 )
 
-            if [[ "${var_element1}" == *$( echo $str_OS | tr '[:upper:]' '[:lower:]' )* ]]; then
-                for int_delimiter in {1..$int_max_count}; do
-                    str_package_manager=$( echo ${arr_package_managers[$var_key]} | cut -d ' ' -f $int_delimiter )
+        #     for int_delimiter in {1..$int_max_count}; do
+        #         str_package_manager=$( echo ${arr_package_managers[$var_key]} | cut -d ' ' -f $int_delimiter )
 
-                    if CheckIfCommandIsInstalled $var_element2; then
-                        bool=true
-                        break
-                    fi
-                done
-            fi
+        #         if CheckIfCommandIsInstalled $var_element2; then
+        #             bool=true
+        #             break
+        #         fi
+        #     done
+        # }
 
-            if [[ $bool == true ]]; then
-                break
-            fi
-        done
+        case *$( echo $str_OS | tr '[:upper:]' '[:lower:]' )* in
+            "${arr_sort_OS_by_package_manager[0]}" )
+                GetPackageManagerForOS;;
+
+            "${arr_sort_OS_by_package_manager[1]}" )
+                GetPackageManagerForOS;;
+
+            "${arr_sort_OS_by_package_manager[2]}" )
+                GetPackageManagerForOS;;
+        esac
+
+        ### old ###
+        # for var_key in ${!arr_sort_OS_by_package_manager[@]}; do
+        #     # local int_max_count=$( expr ${#arr_package_managers[@]} - 1 )
+        #     local var_element1=${arr_sort_OS_by_package_manager[$var_key]}
+
+        #     if [[ "${var_element1}" == *$( echo $str_OS | tr '[:upper:]' '[:lower:]' )* ]]; then
+        #         for int_delimiter in {1..$int_max_count}; do
+        #             str_package_manager=$( echo ${arr_package_managers[$var_key]} | cut -d ' ' -f $int_delimiter )
+
+        #             if CheckIfCommandIsInstalled $var_element2; then
+        #                 bool=true
+        #                 break
+        #             fi
+        #         done
+        #     fi
+
+        #     if [[ $bool == true ]]; then
+        #         break
+        #     fi
+        # done
 
         if [[ $bool == false ]]; then
             str_package_manager=""
@@ -325,12 +360,10 @@
         local readonly str_output_fail="${var_prefix_fail} Could not create directory '$1'."
         # </params>
 
-        # <summary> Validation </summary>
         if ! CheckIfDirExists $1; then
             return $?
         fi
 
-        # <summary> main </summary>
         mkdir -p $1 || (
             echo -e $str_output_fail
             return 1
@@ -349,12 +382,10 @@
         local readonly str_output_fail="${var_prefix_fail} Could not create file '$1'."
         # </params>
 
-        # <summary> Validation </summary>
         if CheckIfFileExists $1; then
             return 0
         fi
 
-        # <summary> main </summary>
         touch $1 || (
             echo -e $str_output_fail
             return 1
@@ -373,12 +404,10 @@
         local readonly str_output_fail="${var_prefix_fail} Could not delete file '$1'."
         # </params>
 
-        # <summary> Validation </summary>
         if ! CheckIfFileExists $1; then
             return 0
         fi
 
-        # <summary> main </summary>
         rm $1 || (
             echo -e $str_output_fail
             return 1
@@ -400,7 +429,6 @@
         local var_output=$( echo -e "${var_file[@]}" )
         # </params>
 
-        # <summary> Validation </summary>
         if ! CheckIfFileExists $1; then
             return "$?"
         fi
@@ -409,7 +437,6 @@
             return "$?"
         fi
 
-        # <summary> main </summary>
         ( printf "%s\n" "${var_output[@]}" >> $1 ) || (
             echo -e $str_output_fail
             return 1
@@ -433,7 +460,6 @@
         local str_output=""
         # </params>
 
-        # <summary> Validation </summary>
         if CheckIfVarIsValid $1; then
             str_output="$1 "
         fi
@@ -490,7 +516,6 @@
         var_input=""
         # </params>
 
-        # <summary> Validation </summary>
         if ! CheckIfVarIsNum $int_min; then
             echo -e $str_output_extrema_are_not_valid
             return 1
@@ -554,7 +579,7 @@
         var_input=""
         # </params>
 
-        # <summary> Multiple choice validation </summary>
+        # <summary> Minimum multiple choice are two answers. </summary>
         if CheckIfVarIsValid $2; then
             arr_input+=( $2 )
         else
@@ -576,7 +601,6 @@
         if CheckIfVarIsValid $8; then arr_input+=( $8 ); fi
         if CheckIfVarIsValid $9; then arr_input+=( $9 ); fi
 
-        # <summary> Output statement validation </summary>
         if CheckIfVarIsValid $1; then
             str_output="$1 "
         fi
@@ -638,7 +662,7 @@
         var_input=""
         # </params>
 
-        # <summary> Multiple choice validation </summary>
+        # <summary> Minimum multiple choice are two answers. </summary>
         if CheckIfVarIsValid $2; then
             arr_input+=( $2 )
         else
@@ -660,7 +684,6 @@
         if CheckIfVarIsValid $8; then arr_input+=( $8 ); fi
         if CheckIfVarIsValid $9; then arr_input+=( $9 ); fi
 
-        # <summary> Output statement validation </summary>
         if CheckIfVarIsValid $1; then
             str_output="$1 "
         fi
