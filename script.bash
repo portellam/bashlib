@@ -436,13 +436,11 @@
         # </params>
 
         # <summary> Validation </summary>
-        CheckIfVarIsValid $1
-
-        if [[ "$?" -eq 0 ]]; then
+        if CheckIfVarIsValid $1; then
             str_output="$1 "
         fi
 
-        declare -r str_output+="\e[30;43m[Y/n]:\e[0m"
+        declare -r str_output+="${var_green}[Y/n]:${var_reset}"
 
         while [[ $int_count -le $int_max_count ]]; do
 
@@ -457,12 +455,8 @@
             read var_input
             var_input=$( echo $var_input | tr '[:lower:]' '[:upper:]' )
 
-            # <summary> Input validation </summary>
-            CheckIfVarIsValid $var_input
-
-            if [[ "$?" -eq 0 ]]; then
-
-                # <summary> Check if input is valid. </summary>
+            # <summary> Check if input is valid. </summary>
+            if CheckIfVarIsValid $var_input; then
                 case $var_input in
                     "Y")
                         return 0;;
@@ -494,28 +488,26 @@
         declare -ir int_min=$2
         declare -ir int_max=$3
         local str_output=""
+        local readonly str_output_extrema_are_not_valid="${var_prefix_error} Extrema are not valid."
         var_input=""
         # </params>
 
-        # <summary> Multiple choice validation (mininum is two choices) </summary>
-        while [[ "$?" -eq 0 ]]; do
-            CheckIfVarIsNum $int_min
-            CheckIfVarIsNum $int_max
-            break
-        done
-
-        if [[ "$?" -ne 0 ]]; then
+        # <summary> Validation </summary>
+        if ! CheckIfVarIsNum $int_min; then
+            echo -e $str_output_extrema_are_not_valid
             return 1
         fi
 
-        # <summary> Output statement validation </summary>
-        CheckIfVarIsValid $1
+        if ! CheckIfVarIsNum $int_max; then
+            echo -e $str_output_extrema_are_not_valid
+            return 1
+        fi
 
-        if [[ "$?" -eq 0 ]]; then
+        if CheckIfVarIsValid $1; then
             str_output="$1 "
         fi
 
-        readonly str_output+="\e[30;43m[${int_min}-${int_max}]:\e[0m"
+        readonly str_output+="${var_green}[${int_min}-${int_max}]:${var_reset}"
 
         # <summary> Read input </summary>
         while [[ $int_count -le $int_max_count ]]; do
@@ -531,10 +523,8 @@
             echo -en "${str_output} "
             read var_input
 
-            # <summary> Input validation </summary>
-            CheckIfVarIsNum $var_input
-
-            if [[ "$?" -eq 0 && $var_input -ge $int_min && $var_input -le $int_max ]]; then
+            # <summary> Check if input is valid. </summary>
+            if CheckIfVarIsNum $var_input && [[ $var_input -ge $int_min && $var_input -le $int_max ]]; then
                 return 0
             fi
 
@@ -562,34 +552,38 @@
         declare -i int_count=0
         declare -ir int_max_count=3
         local str_output=""
+        local readonly str_output_multiple_choice_not_valid="${var_prefix_error} Insufficient multiple choice answers."
         var_input=""
         # </params>
 
         # <summary> Multiple choice validation </summary>
-        while [[ "$?" -eq 0 ]]; do
-            CheckIfVarIsValid $2; arr_input+=( $2 )
-            CheckIfVarIsValid $3; arr_input+=( $3 )
-            CheckIfVarIsValid $3; arr_input+=( $4 )
-            CheckIfVarIsValid $5; arr_input+=( $5 )
-            CheckIfVarIsValid $6; arr_input+=( $6 )
-            CheckIfVarIsValid $7; arr_input+=( $7 )
-            CheckIfVarIsValid $8; arr_input+=( $8 )
-            CheckIfVarIsValid $9; arr_input+=( $9 )
-            break
-        done
-
-        if [[ "$?" -ne 0 ]]; then
-            return 1
+        if CheckIfVarIsValid $2; then
+            arr_input+=( $2 )
+        else
+            echo -e $str_output_multiple_choice_not_valid
+            return 1;
         fi
 
-        # <summary> Output statement validation </summary>
-        CheckIfVarIsValid $1
+        if CheckIfVarIsValid $3; then
+            arr_input+=( $3 )
+        else
+            echo -e $str_output_multiple_choice_not_valid
+            return 1;
+        fi
 
-        if [[ "$?" -eq 0 ]]; then
+        if CheckIfVarIsValid $4; then arr_input+=( $4 ); fi
+        if CheckIfVarIsValid $5; then arr_input+=( $5 ); fi
+        if CheckIfVarIsValid $6; then arr_input+=( $6 ); fi
+        if CheckIfVarIsValid $7; then arr_input+=( $7 ); fi
+        if CheckIfVarIsValid $8; then arr_input+=( $8 ); fi
+        if CheckIfVarIsValid $9; then arr_input+=( $9 ); fi
+
+        # <summary> Output statement validation </summary>
+        if CheckIfVarIsValid $1; then
             str_output="$1 "
         fi
 
-        readonly str_output+="\e[30;43m[${arr_input[@]}]:\e[0m"
+        readonly str_output+="${var_green}[${arr_input[@]}]:${var_reset}"
 
         # <summary> Read input </summary>
         while [[ $int_count -le $int_max_count ]]; do
@@ -605,13 +599,10 @@
             echo -en "${str_output} "
             read var_input
 
-            # <summary> Input validation </summary>
-            CheckIfVarIsValid $var_input
-
-            if [[ "$?" -eq 0 ]]; then
+            # <summary> Check if input is valid. </summary>
+            if CheckIfVarIsValid $var_input; then
                 var_input=$( echo $var_input | tr '[:lower:]' '[:upper:]' )
 
-                # <summary> Check if input is valid. </summary>
                 for var_element in ${arr_input[@]}; do
                     if [[ "${var_input}" == $( echo $var_element | tr '[:lower:]' '[:upper:]' ) ]]; then
                         var_input=$var_element
@@ -645,34 +636,38 @@
         declare -i int_count=0
         declare -ir int_max_count=3
         local str_output=""
+        local readonly str_output_multiple_choice_not_valid="${var_prefix_error} Insufficient multiple choice answers."
         var_input=""
         # </params>
 
         # <summary> Multiple choice validation </summary>
-        while [[ "$?" -eq 0 ]]; do
-            CheckIfVarIsValid $2; arr_input+=( $2 )
-            CheckIfVarIsValid $3; arr_input+=( $3 )
-            CheckIfVarIsValid $3; arr_input+=( $4 )
-            CheckIfVarIsValid $5; arr_input+=( $5 )
-            CheckIfVarIsValid $6; arr_input+=( $6 )
-            CheckIfVarIsValid $7; arr_input+=( $7 )
-            CheckIfVarIsValid $8; arr_input+=( $8 )
-            CheckIfVarIsValid $9; arr_input+=( $9 )
-            break
-        done
-
-        if [[ "$?" -ne 0 ]]; then
-            return 1
+        if CheckIfVarIsValid $2; then
+            arr_input+=( $2 )
+        else
+            echo -e $str_output_multiple_choice_not_valid
+            return 1;
         fi
 
-        # <summary> Output statement validation </summary>
-        CheckIfVarIsValid $1
+        if CheckIfVarIsValid $3; then
+            arr_input+=( $3 )
+        else
+            echo -e $str_output_multiple_choice_not_valid
+            return 1;
+        fi
 
-        if [[ "$?" -eq 0 ]]; then
+        if CheckIfVarIsValid $4; then arr_input+=( $4 ); fi
+        if CheckIfVarIsValid $5; then arr_input+=( $5 ); fi
+        if CheckIfVarIsValid $6; then arr_input+=( $6 ); fi
+        if CheckIfVarIsValid $7; then arr_input+=( $7 ); fi
+        if CheckIfVarIsValid $8; then arr_input+=( $8 ); fi
+        if CheckIfVarIsValid $9; then arr_input+=( $9 ); fi
+
+        # <summary> Output statement validation </summary>
+        if CheckIfVarIsValid $1; then
             str_output="$1 "
         fi
 
-        readonly str_output+="\e[30;43m[${arr_input[@]}]:\e[0m"
+        readonly str_output+="${var_green}[${arr_input[@]}]:${var_reset}"
 
         # <summary> Read input </summary>
         while [[ $int_count -le $int_max_count ]]; do
@@ -680,7 +675,7 @@
             # <summary> After given number of attempts, input is set to first choice. </summary>
             if [[ $int_count -ge $int_max_count ]]; then
                 var_input=${arr_input[0]}
-                echo -en " Exceeded max attempts. Choice is set to default: ${var_input}"
+                echo -e "Exceeded max attempts. Choice is set to default: ${var_input}"
                 break
             fi
 
@@ -688,12 +683,8 @@
             echo -en "${str_output} "
             read var_input
 
-            # <summary> Input validation </summary>
-            CheckIfVarIsValid $var_input
-
-            if [[ "$?" -eq 0 ]]; then
-
-                # <summary> Check if input is valid. </summary>
+            # <summary> Check if input is valid. </summary>
+            if CheckIfVarIsValid $var_input; then
                 for var_element in ${arr_input[@]}; do
                     if [[ "${var_input}" == "${var_element}" ]]; then
                         var_input=$var_element
@@ -712,28 +703,36 @@
 # </code>
 
 ### debug
+#   TODO: test each function!
 
-# ReadInput "Hello world."                                      # works as intended
+# ReadInput "Hello world."
 # echo $?
 
-# var_input="-1"
-# ReadInputFromRangeOfTwoNums "Enter an 8-bit value." 0 255     # works as intended
+# ReadInput
+# echo $?
+
+# var_input=""
+# ReadInputFromRangeOfTwoNums "Enter an 8-bit value." 0 255
 # echo $var_input
 
 # var_input=""
-# ReadMultipleChoiceIgnoreCase "Multiple choice." "a" "B" "c"   # works as intended
+# ReadInputFromRangeOfTwoNums "This range is not correct" "A" "B"
 # echo $var_input
 
-# ReadMultipleChoiceMatchCase "Multiple choice." "a" "B" "c"    # works as intended
+# var_input=""
+# ReadMultipleChoiceIgnoreCase "Multiple choice." "a" "B" "c"
+# echo $var_input
+
+# ReadMultipleChoiceMatchCase "Multiple choice." "a" "B" "c"
 # echo $var_input
 
 # str="newfile.txt"
 # echo $str
 
-# CreateFile $str                                               # works as intended
+# CreateFile $str
 # echo "$?"
 
-# declare -a var_file=( "Hello" "World" )                         # works as intended
+# declare -a var_file=( "Hello" "World" )
 # WriteToFile $str
 # echo "$?"
 
@@ -742,9 +741,9 @@
 # DeleteFile $str
 # echo "$?"
 
-# TestNetwork                                                   # works as intended
+# TestNetwork
 
-# CheckIfCommandIsInstalled "apt"                               # works as intended
+# CheckIfCommandIsInstalled "apt"
 # CheckIfCommandIsInstalled "windows-nt"
 
 CheckLinuxDistro      # not working
