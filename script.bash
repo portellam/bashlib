@@ -749,3 +749,9 @@
 CheckLinuxDistro      # not working
 
 exit 0
+
+# NOTES
+#   function to retry given command x times before giving up
+#   example: if a download fails five times, test network, and then quit.
+#
+#
