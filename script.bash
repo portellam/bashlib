@@ -76,7 +76,7 @@
     {
         # <params>
         local readonly str_file=$( basename $0 )
-        local readonly str_output_user_is_not_root="${var_prefix_warn} User is not Sudo/Root.\nIn terminal, run:\n\t'sudo bash ${str_file1}'"
+        local readonly str_output_user_is_not_root="${var_prefix_warn} User is not Sudo/Root.\nIn terminal, enter:\t'sudo bash ${str_file}'"
         # </params>
 
         if [[ $( whoami ) != "root" ]]; then
@@ -272,19 +272,19 @@
         fi
 
         ### new ###
-        # function GetPackageManagerForOS
-        # {
-        #     local int_max_count=$( expr ${#arr_package_managers[@]} - 1 )
+        function GetPackageManagerForOS
+        {
+            local int_max_count=$( expr ${#arr_package_managers[@]} - 1 )
 
-        #     for int_delimiter in {1..$int_max_count}; do
-        #         str_package_manager=$( echo ${arr_package_managers[$var_key]} | cut -d ' ' -f $int_delimiter )
+            for int_delimiter in {1..$int_max_count}; do
+                str_package_manager=$( echo ${arr_package_managers[$var_key]} | cut -d ' ' -f $int_delimiter )
 
-        #         if CheckIfCommandIsInstalled $var_element2; then
-        #             bool=true
-        #             break
-        #         fi
-        #     done
-        # }
+                if CheckIfCommandIsInstalled $var_element2; then
+                    bool=true
+                    break
+                fi
+            done
+        }
 
         case *$( echo $str_OS | tr '[:upper:]' '[:lower:]' )* in
             "${arr_sort_OS_by_package_manager[0]}" )
@@ -768,6 +768,8 @@
 # CheckIfCommandIsInstalled "windows-nt"
 
 CheckLinuxDistro      # not working
+
+# CheckIfUserIsRoot   # works
 
 exit 0
 
