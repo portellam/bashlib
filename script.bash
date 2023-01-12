@@ -264,34 +264,32 @@
 
         # <summary> Match the package manager with the current distro. If it is installed, return true. Else, false. </summary>
         for var_key in ${!arr_sort_OS_by_package_manager[@]}; do
-            local int_delimiter=1
+            local int_max_count=$( expr ${#arr_package_managers[@]} - 1 )
             local var_element1=${arr_sort_OS_by_package_manager[$var_key]}
-            local var_element2=$( echo ${arr_package_managers[$var_key]} | cut -d ' ' -f $int_delimiter )
 
             if [[ "${var_element1}" == *$( echo $str_OS | tr '[:upper:]' '[:lower:]' )* ]]; then
-                while CheckIfVarIsValid $var_element2; do
-                    if [[ "$?" -eq 0 ]]; then
+                for int_delimiter in {1..$int_max_count}; do
+                    str_package_manager=$( echo ${arr_package_managers[$var_key]} | cut -d ' ' -f $int_delimiter )
+
+                    if CheckIfCommandIsInstalled $var_element2; then
                         bool=true
                         break
                     fi
-
-                    bool=false
-                    $(( int_delimiter++ ))
                 done
             fi
 
             if [[ $bool == true ]]; then
-                str_package_manager=$var_element2
                 break
             fi
         done
 
         if [[ $bool == false ]]; then
+            str_package_manager=""
             echo -e $str_output_distro_is_not_valid
             return 1
         fi
 
-        return
+        return 0
     }
 
     # <summary> Test network connection to Internet. Ping DNS servers by address and name. </summary>
