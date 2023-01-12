@@ -152,7 +152,7 @@
                 ;;
         esac
 
-        return
+        return 0
     }
 
     # <summary> Check if the directory exists. </summary>
@@ -176,7 +176,7 @@
             return $int_code_dir_is_null
         fi
 
-        return
+        return 0
     }
 
     # <summary> Check if the file exists. </summary>
@@ -200,7 +200,7 @@
             return $int_code_file_is_null
         fi
 
-        return
+        return 0
     }
 # </code>
 
