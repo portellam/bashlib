@@ -139,10 +139,8 @@
         local readonly str_output_var_is_NAN="${var_prefix_error} NaN."
         # </params>
 
-        # <summary> Nested validation </summary>
-        CheckIfVarIsValid $1
-
-        if [[ "$?" -ne 0 ]]; then
+        # <summary> Validation </summary>
+        if ! CheckIfVarIsValid $1; then
             return $?
         fi
 
@@ -167,10 +165,8 @@
         local readonly str_output_dir_is_null="${var_prefix_error} Directory '$1' does not exist."
         # </params>
 
-        # <summary> Nested validation </summary>
-        CheckIfVarIsValid $1
-
-        if [[ "$?" -ne 0 ]]; then
+        # <summary> Validation </summary>
+        if ! CheckIfVarIsValid $1; then
             return $?
         fi
 
@@ -193,10 +189,8 @@
         local readonly str_output_file_is_null="${var_prefix_error} File '$1' does not exist."
         # </params>
 
-        # <summary> Nested validation </summary>
-        CheckIfVarIsValid $1
-
-        if [[ "$?" -ne 0 ]]; then
+        # <summary> Validation </summary>
+        if ! CheckIfVarIsValid $1; then
             return $?
         fi
 
@@ -333,20 +327,18 @@
         local readonly str_output_fail="${var_prefix_fail} Could not create directory '$1'."
         # </params>
 
-        # <summary> Nested validation </summary>
-        CheckIfDirExists $1
-
-        if [[ "$?" -eq 0 ]]; then
-            return "$?"
+        # <summary> Validation </summary>
+        if ! CheckIfDirExists $1; then
+            return $?
         fi
 
         # <summary> main </summary>
         mkdir -p $1 || (
             echo -e $str_output_fail
-            false
+            return 1
         )
 
-        return "$?"
+        return 0
     }
 
     # <summary> Create a file. </summary>
@@ -359,11 +351,9 @@
         local readonly str_output_fail="${var_prefix_fail} Could not create file '$1'."
         # </params>
 
-        # <summary> Nested validation; If file does exist, stop. </summary>
-        CheckIfFileExists $1
-
-        if [[ "$?" -eq 0 ]]; then
-            return "$?"
+        # <summary> Validation </summary>
+        if CheckIfFileExists $1; then
+            return 0
         fi
 
         # <summary> main </summary>
@@ -385,11 +375,9 @@
         local readonly str_output_fail="${var_prefix_fail} Could not delete file '$1'."
         # </params>
 
-        # <summary> Nested validation; If file does not exist, stop. </summary>
-        CheckIfFileExists $1
-
-        if [[ "$?" -ne 0 ]]; then
-            return "$?"
+        # <summary> Validation </summary>
+        if ! CheckIfFileExists $1; then
+            return 0
         fi
 
         # <summary> main </summary>
@@ -414,26 +402,22 @@
         local var_output=$( echo -e "${var_file[@]}" )
         # </params>
 
-        # <summary> Nested validation </summary>
-        while [[ "$?" -eq 0 ]]; do
-            ExecuteDebug $( CheckIfFileExists $1 )
-            ExecuteDebug $( CheckIfVarIsValid $var_output )
-            break
-        done
+        # <summary> Validation </summary>
+        if ! CheckIfFileExists $1; then
+            return "$?"
+        fi
 
-        echo "$?"
-
-        if [[ "$?" -ne 0 ]]; then
+        if ! CheckIfVarIsValid $var_output; then
             return "$?"
         fi
 
         # <summary> main </summary>
-        ( ExecuteDebug $( printf "%s\n" "${var_output[@]}" >> $1 ) ) || (
+        ( printf "%s\n" "${var_output[@]}" >> $1 ) || (
             echo -e $str_output_fail
-            false
+            return 1
         )
 
-        return "$?"
+        return 0
     }
 # </code>
 
@@ -451,7 +435,7 @@
         local str_output=""
         # </params>
 
-        # <summary> Nested validation </summary>
+        # <summary> Validation </summary>
         CheckIfVarIsValid $1
 
         if [[ "$?" -eq 0 ]]; then
