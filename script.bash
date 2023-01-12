@@ -8,7 +8,7 @@
 
 # <summary> Global parameters </summary>
 # <params>
-    local declare -gl str_package_manager=""
+    declare -gl str_package_manager=""
 
     # <summary> Exit codes </summary>
     declare -gir int_code_var_is_null=255
@@ -26,12 +26,32 @@
     declare -gr var_yellow='\033[38;5;3m'
 
     # <summary> Append output </summary>
-    declare -gr var_error="${var_yellow}Error${var_reset}"
-    declare -gr var_fail="${var_red}Failure${var_red}"
-    declare -gr var_pass="${var_green}Success${var_red}"
-    declare -gr var_warn="${var_yellow}Warning${var_red}"
-    declare -gr str_output_var_is_not_valid="${var_error} Invalid input."
+    declare -gr var_prefix_error="${var_yellow}Error:${var_reset}"
+    declare -gr var_prefix_fail="${var_red}Failure:${var_reset}"
+    declare -gr var_prefix_pass="${var_green}Success:${var_reset}"
+    declare -gr var_prefix_warn="${var_yellow}Warning:${var_reset}"
+    declare -gr var_suffix_fail="${var_red}Failure${var_reset}"
+    declare -gr var_suffix_pass="${var_green}Success${var_reset}"
+    declare -gr str_output_var_is_not_valid="${var_prefix_error} Invalid input."
 # </params>
+
+# <summary> Toggle Debug </summary>                             # not working
+# <params>
+    declare -g bool_debug_is_enabled=false
+# </params>
+# <code>
+    # <summary> Append debug </summary>
+    # <param name="$bool_debug_is_enabled"> the toggle </param>
+    # <returns> void</returns>
+    function ExecuteDebug
+    {
+        if [[ $bool_debug_is_enabled == true ]]; then
+            "$@"
+        else
+            "$@" >/dev/null 2>&1
+        fi
+    }
+# </code>
 
 # <summary> Important </summary>
 # <code>
@@ -41,11 +61,11 @@
     {
         case "$?" in
             0)
-                echo -e $var_pass
+                echo -e $var_suffix_pass
                 return 0;;
             *)
                 SaveExitCode
-                echo -e $var_fail
+                echo -e $var_suffix_fail
                 return $int_exit_code;;
         esac
     }
@@ -69,25 +89,20 @@
     function CheckIfCommandIsInstalled
     {
         # <params>
-        local readonly str_output_cmd_is_null="${var_error}: Command '$1' is not installed."
+        local readonly str_output_cmd_is_null="${var_prefix_error} Command '$1' is not installed."
         # </params>
 
-        # <summary> Nested validation </summary>
-        CheckIfVarIsValid $1 &> /dev/null
-
-        if [[ "$?" -ne 0 ]]; then
+        # <summary> Validation </summary>
+        if ! CheckIfVarIsValid $1; then
             return $?
         fi
 
-        # <summary> main </summary>
-        CheckIfVarIsValid $( command -v $1 ) &> /dev/null
-
-        if [[ "$?" -ne 0 ]]; then
+        if ! CheckIfVarIsValid $( command -v $1 ); then
             echo -e $str_output_cmd_is_null
             return $int_code_cmd_is_null
         fi
 
-        return
+        return 0
     }
 
     # <summary> Check if the value is valid. </summary>
@@ -97,8 +112,8 @@
     function CheckIfVarIsValid
     {
         # <params>
-        local readonly str_output_var_is_null="${var_error}: Null string."
-        local readonly str_output_var_is_empty="${var_error}: Empty string."
+        local readonly str_output_var_is_null="${var_prefix_error} Null string."
+        local readonly str_output_var_is_empty="${var_prefix_error} Empty string."
         # </params>
 
         if [[ -z "$1" ]]; then
@@ -111,7 +126,7 @@
             return $int_code_var_is_empty
         fi
 
-        return "$?"
+        return 0
     }
 
     # <summary> Check if the value is a valid number. </summary>
@@ -121,7 +136,7 @@
     function CheckIfVarIsNum
     {
         # <params>
-        local readonly str_output_var_is_NAN="${var_error}: NaN."
+        local readonly str_output_var_is_NAN="${var_prefix_error} NaN."
         # </params>
 
         # <summary> Nested validation </summary>
@@ -149,7 +164,7 @@
     function CheckIfDirExists
     {
         # <params>
-        local readonly str_output_dir_is_null="${var_error}: Directory '$1' does not exist."
+        local readonly str_output_dir_is_null="${var_prefix_error} Directory '$1' does not exist."
         # </params>
 
         # <summary> Nested validation </summary>
@@ -175,7 +190,7 @@
     function CheckIfFileExists
     {
         # <params>
-        local readonly str_output_file_is_null="${var_error} File '$1' does not exist."
+        local readonly str_output_file_is_null="${var_prefix_error} File '$1' does not exist."
         # </params>
 
         # <summary> Nested validation </summary>
@@ -202,14 +217,14 @@
     function CheckLinuxDistro
     {
         # <params>
-        local declare -lr str_kernel=$( uname -o )
-        local declare -lr str_OS=$( lsb_release -is )
-        # local declare -gl str_package_manager=""
+        local bool=false
+        local readonly str_kernel="$( uname -o )"
+        local readonly str_OS="$( lsb_release -is )"
+        local str_package_manager=""
+        local readonly str_output_distro_is_not_valid="${var_prefix_error} OS '${str_OS}' is not supported."
+        local readonly str_output_kernel_is_not_valid="${var_prefix_error} Kernel '${str_kernel}' is not supported."
 
-        local readonly str_output_distro_is_not_valid="${var_error} Distribution '${str_OS}' is not supported."
-        local readonly str_output_kernel_is_not_valid="${var_error} Kernel '${str_kernel}' is not supported."
-
-        local declare -alr arr_package_managers=(
+        local readonly arr_package_managers=(
             "apt"
             "dnf yum"
             "pacman"
@@ -218,7 +233,7 @@
             "zypper"
         )
 
-        local declare -alr arr_sort_OS_by_package_manager=(
+        local readonly arr_sort_OS_by_package_manager=(
             # apt       (debian)
             "debian bodhi deepin knoppix mint peppermint pop ubuntu kubuntu lubuntu xubuntu "
 
@@ -239,56 +254,45 @@
         )
         # </params>
 
-        # <summary> Nested validation </summary>
-        while [[ "$?" -eq 0 ]]; do
-            CheckIfVarIsValid $str_kernel &> /dev/null
-            CheckIfVarIsValid $str_OS &> /dev/null
-            break
-        done
-
-        if [[ "$?" -ne 0 ]]; then
+        # <summary> Validation </summary>
+        if ! CheckIfVarIsValid $str_kernel; then
             return $?
         fi
 
-        if [["${str_kernel}" != *"linux"* ]]; then
+        if ! CheckIfVarIsValid $str_OS; then
+            return $?
+        fi
+
+        if [[ $( echo $str_kernel | tr '[:upper:]' '[:lower:]' ) != *"linux"* ]]; then
             echo -e $str_output_kernel_is_not_valid
             return 1
         fi
 
         # <summary> Match the package manager with the current distro. If it is installed, return true. Else, false. </summary>
         for var_key in ${!arr_sort_OS_by_package_manager[@]}; do
+            local int_delimiter=1
             local var_element1=${arr_sort_OS_by_package_manager[$var_key]}
-            local bool=false
+            local var_element2=$( echo ${arr_package_managers[$var_key]} | cut -d ' ' -f $int_delimiter )
 
-            if [[ "${str_OS}" == "${var_element1}" ]]; then
-                bool=true
+            if [[ "${var_element1}" == *$( echo $str_OS | tr '[:upper:]' '[:lower:]' )* ]]; then
+                while CheckIfVarIsValid $var_element2; do
+                    if [[ "$?" -eq 0 ]]; then
+                        bool=true
+                        break
+                    fi
+
+                    bool=false
+                    $(( int_delimiter++ ))
+                done
             fi
 
-            while [[ $bool == true ]]; do
-                local declare -i int_delimiter=1
-                local var_element2=$( echo ${arr_package_managers[$var_key]} | cut -d ' ' -f $int_delimiter )
-
-                CheckIfVarIsValid $var_element2
-
-                if [[ "$?" -ne 0 ]]; then
-                    bool=false
-                fi
-
-                CheckIfCommandIsInstalled $var_element2
-
-                if [[ "$?" -eq 0 ]]; then
-                    str_package_manager=$var_element2
-                    (return 0); break
-                fi
-
-                $(( int_delimiter++ ))
-                (return 1)
-            done
-
-            (return 1)
+            if [[ $bool == true ]]; then
+                str_package_manager=$var_element2
+                break
+            fi
         done
 
-        if [[ "$?" -ne 0 ]]; then
+        if [[ $bool == false ]]; then
             echo -e $str_output_distro_is_not_valid
             return 1
         fi
@@ -301,11 +305,11 @@
     function TestNetwork
     {
         echo -en "Testing Internet connection...\t"
-        ( ping -q -c 1 8.8.8.8 &> /dev/null || ping -q -c 1 1.1.1.1 &> /dev/null ) || false
+        ( ping -q -c 1 8.8.8.8 || ping -q -c 1 1.1.1.1 ) || false
         AppendPassOrFail
 
         echo -en "Testing connection to DNS...\t"
-        ( ping -q -c 1 www.google.com &> /dev/null && ping -q -c 1 www.yandex.com &> /dev/null ) || false
+        ( ping -q -c 1 www.google.com && ping -q -c 1 www.yandex.com ) || false
         AppendPassOrFail
 
         if [[ $int_exit_code -ne 0 ]]; then
@@ -326,7 +330,7 @@
     function CreateDir
     {
         # <params>
-        local readonly str_output_fail="${var_fail}: Could not create directory '$1'."
+        local readonly str_output_fail="${var_prefix_fail} Could not create directory '$1'."
         # </params>
 
         # <summary> Nested validation </summary>
@@ -337,7 +341,7 @@
         fi
 
         # <summary> main </summary>
-        mkdir -p $1 &> /dev/null || (
+        mkdir -p $1 || (
             echo -e $str_output_fail
             false
         )
@@ -352,18 +356,18 @@
     function CreateFile
     {
         # <params>
-        local readonly str_output_fail="${var_fail}: Could not create file '$1'."
+        local readonly str_output_fail="${var_prefix_fail} Could not create file '$1'."
         # </params>
 
         # <summary> Nested validation; If file does exist, stop. </summary>
-        CheckIfFileExists $1 &> /dev/null
+        CheckIfFileExists $1
 
         if [[ "$?" -eq 0 ]]; then
             return "$?"
         fi
 
         # <summary> main </summary>
-        touch $1 &> /dev/null || (
+        touch $1 || (
             echo -e $str_output_fail
             return 1
         )
@@ -378,18 +382,18 @@
     function DeleteFile
     {
         # <params>
-        local readonly str_output_fail="${var_fail}: Could not delete file '$1'."
+        local readonly str_output_fail="${var_prefix_fail} Could not delete file '$1'."
         # </params>
 
         # <summary> Nested validation; If file does not exist, stop. </summary>
-        CheckIfFileExists $1 &> /dev/null
+        CheckIfFileExists $1
 
         if [[ "$?" -ne 0 ]]; then
             return "$?"
         fi
 
         # <summary> main </summary>
-        rm $1 &> /dev/null || (
+        rm $1 || (
             echo -e $str_output_fail
             return 1
         )
@@ -406,23 +410,25 @@
     function WriteToFile
     {
         # <params>
-        local readonly str_output_fail="${var_fail}: Could not write to file '$1'."
+        local readonly str_output_fail="${var_prefix_fail} Could not write to file '$1'."
         local var_output=$( echo -e "${var_file[@]}" )
         # </params>
 
         # <summary> Nested validation </summary>
         while [[ "$?" -eq 0 ]]; do
-            CheckIfFileExists $1
-            CheckIfVarIsValid $var_output
+            ExecuteDebug $( CheckIfFileExists $1 )
+            ExecuteDebug $( CheckIfVarIsValid $var_output )
             break
         done
+
+        echo "$?"
 
         if [[ "$?" -ne 0 ]]; then
             return "$?"
         fi
 
         # <summary> main </summary>
-        ( printf "%s\n" "${var_output[@]}" >> $1 ) &> /dev/null || (
+        ( ExecuteDebug $( printf "%s\n" "${var_output[@]}" >> $1 ) ) || (
             echo -e $str_output_fail
             false
         )
@@ -446,7 +452,7 @@
         # </params>
 
         # <summary> Nested validation </summary>
-        CheckIfVarIsValid $1 &> /dev/null
+        CheckIfVarIsValid $1
 
         if [[ "$?" -eq 0 ]]; then
             str_output="$1 "
@@ -458,7 +464,7 @@
 
             # <summary> After given number of attempts, input is set to default. </summary>
             if [[ $int_count -ge $int_max_count ]]; then
-                echo -e "${var_warn} Exceeded max attempts. Choice is set to default: N"
+                echo -e "${var_prefix_warn} Exceeded max attempts. Choice is set to default: N"
                 return 1
             fi
 
@@ -468,7 +474,7 @@
             var_input=$( echo $var_input | tr '[:lower:]' '[:upper:]' )
 
             # <summary> Input validation </summary>
-            CheckIfVarIsValid $var_input &> /dev/null
+            CheckIfVarIsValid $var_input
 
             if [[ "$?" -eq 0 ]]; then
 
@@ -519,7 +525,7 @@
         fi
 
         # <summary> Output statement validation </summary>
-        CheckIfVarIsValid $1 &> /dev/null
+        CheckIfVarIsValid $1
 
         if [[ "$?" -eq 0 ]]; then
             str_output="$1 "
@@ -542,7 +548,7 @@
             read var_input
 
             # <summary> Input validation </summary>
-            CheckIfVarIsNum $var_input &> /dev/null
+            CheckIfVarIsNum $var_input
 
             if [[ "$?" -eq 0 && $var_input -ge $int_min && $var_input -le $int_max ]]; then
                 return 0
@@ -577,14 +583,14 @@
 
         # <summary> Multiple choice validation </summary>
         while [[ "$?" -eq 0 ]]; do
-            CheckIfVarIsValid $2 &> /dev/null; arr_input+=( $2 )
-            CheckIfVarIsValid $3 &> /dev/null; arr_input+=( $3 )
-            CheckIfVarIsValid $3 &> /dev/null; arr_input+=( $4 )
-            CheckIfVarIsValid $5 &> /dev/null; arr_input+=( $5 )
-            CheckIfVarIsValid $6 &> /dev/null; arr_input+=( $6 )
-            CheckIfVarIsValid $7 &> /dev/null; arr_input+=( $7 )
-            CheckIfVarIsValid $8 &> /dev/null; arr_input+=( $8 )
-            CheckIfVarIsValid $9 &> /dev/null; arr_input+=( $9 )
+            CheckIfVarIsValid $2; arr_input+=( $2 )
+            CheckIfVarIsValid $3; arr_input+=( $3 )
+            CheckIfVarIsValid $3; arr_input+=( $4 )
+            CheckIfVarIsValid $5; arr_input+=( $5 )
+            CheckIfVarIsValid $6; arr_input+=( $6 )
+            CheckIfVarIsValid $7; arr_input+=( $7 )
+            CheckIfVarIsValid $8; arr_input+=( $8 )
+            CheckIfVarIsValid $9; arr_input+=( $9 )
             break
         done
 
@@ -593,7 +599,7 @@
         fi
 
         # <summary> Output statement validation </summary>
-        CheckIfVarIsValid $1 &> /dev/null
+        CheckIfVarIsValid $1
 
         if [[ "$?" -eq 0 ]]; then
             str_output="$1 "
@@ -616,7 +622,7 @@
             read var_input
 
             # <summary> Input validation </summary>
-            CheckIfVarIsValid $var_input &> /dev/null
+            CheckIfVarIsValid $var_input
 
             if [[ "$?" -eq 0 ]]; then
                 var_input=$( echo $var_input | tr '[:lower:]' '[:upper:]' )
@@ -660,14 +666,14 @@
 
         # <summary> Multiple choice validation </summary>
         while [[ "$?" -eq 0 ]]; do
-            CheckIfVarIsValid $2 &> /dev/null; arr_input+=( $2 )
-            CheckIfVarIsValid $3 &> /dev/null; arr_input+=( $3 )
-            CheckIfVarIsValid $3 &> /dev/null; arr_input+=( $4 )
-            CheckIfVarIsValid $5 &> /dev/null; arr_input+=( $5 )
-            CheckIfVarIsValid $6 &> /dev/null; arr_input+=( $6 )
-            CheckIfVarIsValid $7 &> /dev/null; arr_input+=( $7 )
-            CheckIfVarIsValid $8 &> /dev/null; arr_input+=( $8 )
-            CheckIfVarIsValid $9 &> /dev/null; arr_input+=( $9 )
+            CheckIfVarIsValid $2; arr_input+=( $2 )
+            CheckIfVarIsValid $3; arr_input+=( $3 )
+            CheckIfVarIsValid $3; arr_input+=( $4 )
+            CheckIfVarIsValid $5; arr_input+=( $5 )
+            CheckIfVarIsValid $6; arr_input+=( $6 )
+            CheckIfVarIsValid $7; arr_input+=( $7 )
+            CheckIfVarIsValid $8; arr_input+=( $8 )
+            CheckIfVarIsValid $9; arr_input+=( $9 )
             break
         done
 
@@ -676,7 +682,7 @@
         fi
 
         # <summary> Output statement validation </summary>
-        CheckIfVarIsValid $1 &> /dev/null
+        CheckIfVarIsValid $1
 
         if [[ "$?" -eq 0 ]]; then
             str_output="$1 "
@@ -699,7 +705,7 @@
             read var_input
 
             # <summary> Input validation </summary>
-            CheckIfVarIsValid $var_input &> /dev/null
+            CheckIfVarIsValid $var_input
 
             if [[ "$?" -eq 0 ]]; then
 
@@ -743,9 +749,9 @@
 # CreateFile $str                                               # works as intended
 # echo "$?"
 
-# # declare -a var_file=( "Hello" "World" )                     # works as intended
-# var_file="Hello\nWorld"
+# declare -a var_file=( "Hello" "World" )                         # works as intended
 # WriteToFile $str
+# echo "$?"
 
 # cat $str
 
@@ -757,6 +763,6 @@
 # CheckIfCommandIsInstalled "apt"                               # works as intended
 # CheckIfCommandIsInstalled "windows-nt"
 
-CheckLinuxDistro        # not working
+CheckLinuxDistro      # not working
 
 exit 0
