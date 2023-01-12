@@ -8,19 +8,29 @@
 
 # <summary> Global parameters </summary>
 # <params>
-    declare -gir int_errorCode_varIsNull=255
-    declare -gir int_errorCode_varIsEmpty=254
-    declare -gir int_errorCode_dirIsNull=253
-    declare -gir int_errorCode_fileIsNull=252
-    declare -gir int_errorCode_varIsNAN=251
-    declare -gir int_errorCode_cmdIsNull=251
-    declare -gi int_exitCode="$?"
-    declare -gr str_prefix_error="\e[33mError:\e[0m"
-    declare -gr str_prefix_fail="\e[31mFailure:\e[0m"
-    declare -gr str_prefix_pass="\e[32mSuccess:\e[0m"
-    declare -gr str_prefix_warn="\e[33mWarning:\e[0m"
-    declare -gr str_output_varIsNotValid="${str_prefix_error} Invalid input."
-    local declare -gl str_packageManager=""
+    local declare -gl str_package_manager=""
+
+    # <summary> Exit codes </summary>
+    declare -gir int_code_var_is_null=255
+    declare -gir int_code_var_is_empty=254
+    declare -gir int_code_dir_is_null=253
+    declare -gir int_code_file_is_null=252
+    declare -gir int_code_var_is_NAN=251
+    declare -gir int_code_cmd_is_null=251
+    declare -gi int_exit_code="$?"
+
+    # <summary> Color coding </summary>
+    declare -gr var_reset='\033[0m'
+    declare -gr var_red='\033[38;5;2m'
+    declare -gr var_green='\033[38;5;2m'
+    declare -gr var_yellow='\033[38;5;3m'
+
+    # <summary> Append output </summary>
+    declare -gr var_error="${var_yellow}Error${var_reset}"
+    declare -gr var_fail="${var_red}Failure${var_red}"
+    declare -gr var_pass="${var_green}Success${var_red}"
+    declare -gr var_warn="${var_yellow}Warning${var_red}"
+    declare -gr str_output_var_is_not_valid="${var_error} Invalid input."
 # </params>
 
 # <summary> Important </summary>
@@ -31,21 +41,21 @@
     {
         case "$?" in
             0)
-                echo -e "\e[32mPassed.\e[0m"
+                echo -e $var_pass
                 return 0;;
             *)
                 SaveExitCode
-                echo -e "\e[31mFailed.\e[0m"
-                return $int_exitCode;;
+                echo -e $var_fail
+                return $int_exit_code;;
         esac
     }
 
     # <summary> Save last exit code. </summary>
-    # <param name="$int_exitCode"> the exit code </param>
+    # <param name="$int_exit_code"> the exit code </param>
     # <returns> void </returns>
     function SaveExitCode
     {
-        int_exitCode="$?"
+        int_exit_code="$?"
     }
 
 # </code>
@@ -59,7 +69,7 @@
     function CheckIfCommandIsInstalled
     {
         # <params>
-        local readonly str_output_cmdIsNull="${str_prefix_error} Command '$1' is not installed."
+        local readonly str_output_cmd_is_null="${var_error}: Command '$1' is not installed."
         # </params>
 
         # <summary> Nested validation </summary>
@@ -73,8 +83,8 @@
         CheckIfVarIsValid $( command -v $1 ) &> /dev/null
 
         if [[ "$?" -ne 0 ]]; then
-            echo -e $str_output_cmdIsNull
-            return $int_errorCode_cmdIsNull
+            echo -e $str_output_cmd_is_null
+            return $int_code_cmd_is_null
         fi
 
         return
@@ -87,18 +97,18 @@
     function CheckIfVarIsValid
     {
         # <params>
-        local readonly str_output_varIsNull="${str_prefix_error} Null string."
-        local readonly str_output_varIsEmpty="${str_prefix_error} Empty string."
+        local readonly str_output_var_is_null="${var_error}: Null string."
+        local readonly str_output_var_is_empty="${var_error}: Empty string."
         # </params>
 
         if [[ -z "$1" ]]; then
-            echo -e $str_output_varIsNull
-            return $int_errorCode_varIsNull
+            echo -e $str_output_var_is_null
+            return $int_code_var_is_null
         fi
 
         if [[ "$1" == "" ]]; then
-            echo -e $str_output_varIsEmpty
-            return $int_errorCode_varIsEmpty
+            echo -e $str_output_var_is_empty
+            return $int_code_var_is_empty
         fi
 
         return "$?"
@@ -111,7 +121,7 @@
     function CheckIfVarIsNum
     {
         # <params>
-        local readonly str_output_varIsNAN="${str_prefix_error} NaN."
+        local readonly str_output_var_is_NAN="${var_error}: NaN."
         # </params>
 
         # <summary> Nested validation </summary>
@@ -124,8 +134,8 @@
         # <summary> main </summary>
         case $1 in
             ''|*[!0-9]*)
-                echo -e $str_output_varIsNAN
-                return $int_errorCode_varIsNAN
+                echo -e $str_output_var_is_NAN
+                return $int_code_var_is_NAN
                 ;;
         esac
 
@@ -139,7 +149,7 @@
     function CheckIfDirExists
     {
         # <params>
-        local readonly str_output_dirIsNull="${str_prefix_error} Directory '$1' does not exist."
+        local readonly str_output_dir_is_null="${var_error}: Directory '$1' does not exist."
         # </params>
 
         # <summary> Nested validation </summary>
@@ -151,8 +161,8 @@
 
         # <summary> main </summary>
         if [[ ! -d "$1" ]]; then
-            echo -e $str_output_dirIsNull
-            return $int_errorCode_dirIsNull
+            echo -e $str_output_dir_is_null
+            return $int_code_dir_is_null
         fi
 
         return
@@ -165,7 +175,7 @@
     function CheckIfFileExists
     {
         # <params>
-        local readonly str_output_fileIsNull="${str_prefix_error} File '$1' does not exist."
+        local readonly str_output_file_is_null="${var_error} File '$1' does not exist."
         # </params>
 
         # <summary> Nested validation </summary>
@@ -177,8 +187,8 @@
 
         # <summary> main </summary>
         if [[ ! -e "$1" ]]; then
-            echo -e $str_output_fileIsNull
-            return $int_errorCode_fileIsNull
+            echo -e $str_output_file_is_null
+            return $int_code_file_is_null
         fi
 
         return
@@ -194,12 +204,12 @@
         # <params>
         local declare -lr str_kernel=$( uname -o )
         local declare -lr str_OS=$( lsb_release -is )
-        # local declare -gl str_packageManager=""
+        # local declare -gl str_package_manager=""
 
-        local readonly str_output_distroIsNotValid="${str_prefix_error} Distribution '${str_OS}' is not supported."
-        local readonly str_output_kernelIsNotValid="${str_prefix_error} Kernel '${str_kernel}' is not supported."
+        local readonly str_output_distro_is_not_valid="${var_error} Distribution '${str_OS}' is not supported."
+        local readonly str_output_kernel_is_not_valid="${var_error} Kernel '${str_kernel}' is not supported."
 
-        local declare -alr arr_packageManagers=(
+        local declare -alr arr_package_managers=(
             "apt"
             "dnf yum"
             "pacman"
@@ -208,7 +218,7 @@
             "zypper"
         )
 
-        local declare -alr arr_sortOS_byPackageManager=(
+        local declare -alr arr_sort_OS_by_package_manager=(
             # apt       (debian)
             "debian bodhi deepin knoppix mint peppermint pop ubuntu kubuntu lubuntu xubuntu "
 
@@ -241,13 +251,13 @@
         fi
 
         if [["${str_kernel}" != *"linux"* ]]; then
-            echo -e $str_output_kernelIsNotValid
+            echo -e $str_output_kernel_is_not_valid
             return 1
         fi
 
         # <summary> Match the package manager with the current distro. If it is installed, return true. Else, false. </summary>
-        for var_key in ${!arr_sortOS_byPackageManager[@]}; do
-            local var_element1=${arr_sortOS_byPackageManager[$var_key]}
+        for var_key in ${!arr_sort_OS_by_package_manager[@]}; do
+            local var_element1=${arr_sort_OS_by_package_manager[$var_key]}
             local bool=false
 
             if [[ "${str_OS}" == "${var_element1}" ]]; then
@@ -256,7 +266,7 @@
 
             while [[ $bool == true ]]; do
                 local declare -i int_delimiter=1
-                local var_element2=$( echo ${arr_packageManagers[$var_key]} | cut -d ' ' -f $int_delimiter )
+                local var_element2=$( echo ${arr_package_managers[$var_key]} | cut -d ' ' -f $int_delimiter )
 
                 CheckIfVarIsValid $var_element2
 
@@ -267,7 +277,7 @@
                 CheckIfCommandIsInstalled $var_element2
 
                 if [[ "$?" -eq 0 ]]; then
-                    str_packageManager=$var_element2
+                    str_package_manager=$var_element2
                     (return 0); break
                 fi
 
@@ -279,7 +289,7 @@
         done
 
         if [[ "$?" -ne 0 ]]; then
-            echo -e $str_output_distroIsNotValid
+            echo -e $str_output_distro_is_not_valid
             return 1
         fi
 
@@ -298,9 +308,9 @@
         ( ping -q -c 1 www.google.com &> /dev/null && ping -q -c 1 www.yandex.com &> /dev/null ) || false
         AppendPassOrFail
 
-        if [[ $int_exitCode -ne 0 ]]; then
+        if [[ $int_exit_code -ne 0 ]]; then
             echo -e "Failed to ping Internet/DNS servers. Check network settings or firewall, and try again."
-            return $int_exitCode
+            return $int_exit_code
         fi
 
         SaveExitCode; return 0
@@ -316,7 +326,7 @@
     function CreateDir
     {
         # <params>
-        local readonly str_output_fail="${str_prefix_fail} Could not create directory '$1'."
+        local readonly str_output_fail="${var_fail}: Could not create directory '$1'."
         # </params>
 
         # <summary> Nested validation </summary>
@@ -342,7 +352,7 @@
     function CreateFile
     {
         # <params>
-        local readonly str_output_fail="${str_prefix_fail} Could not create file '$1'."
+        local readonly str_output_fail="${var_fail}: Could not create file '$1'."
         # </params>
 
         # <summary> Nested validation; If file does exist, stop. </summary>
@@ -368,7 +378,7 @@
     function DeleteFile
     {
         # <params>
-        local readonly str_output_fail="${str_prefix_fail} Could not delete file '$1'."
+        local readonly str_output_fail="${var_fail}: Could not delete file '$1'."
         # </params>
 
         # <summary> Nested validation; If file does not exist, stop. </summary>
@@ -396,7 +406,7 @@
     function WriteToFile
     {
         # <params>
-        local readonly str_output_fail="${str_prefix_fail} Could not write to file '$1'."
+        local readonly str_output_fail="${var_fail}: Could not write to file '$1'."
         local var_output=$( echo -e "${var_file[@]}" )
         # </params>
 
@@ -431,7 +441,7 @@
     {
         # <params>
         declare -i int_count=0
-        declare -ir int_maxCount=3
+        declare -ir int_max_count=3
         local str_output=""
         # </params>
 
@@ -444,11 +454,11 @@
 
         declare -r str_output+="\e[30;43m[Y/n]:\e[0m"
 
-        while [[ $int_count -le $int_maxCount ]]; do
+        while [[ $int_count -le $int_max_count ]]; do
 
             # <summary> After given number of attempts, input is set to default. </summary>
-            if [[ $int_count -ge $int_maxCount ]]; then
-                echo -e "${str_prefix_warn} Exceeded max attempts. Choice is set to default: N"
+            if [[ $int_count -ge $int_max_count ]]; then
+                echo -e "${var_warn} Exceeded max attempts. Choice is set to default: N"
                 return 1
             fi
 
@@ -472,7 +482,7 @@
             fi
 
             # <summary> Input is not valid. </summary>
-            echo -e "${str_output_varIsNotValid}"
+            echo -e "${str_output_var_is_not_valid}"
             (( int_count++ ))
         done
     }
@@ -490,7 +500,7 @@
     {
         # <params>
         declare -i int_count=0
-        declare -ir int_maxCount=3
+        declare -ir int_max_count=3
         declare -ir int_min=$2
         declare -ir int_max=$3
         local str_output=""
@@ -518,10 +528,10 @@
         readonly str_output+="\e[30;43m[${int_min}-${int_max}]:\e[0m"
 
         # <summary> Read input </summary>
-        while [[ $int_count -le $int_maxCount ]]; do
+        while [[ $int_count -le $int_max_count ]]; do
 
             # <summary> After given number of attempts, input is set to first choice. </summary>
-            if [[ $int_count -ge $int_maxCount ]]; then
+            if [[ $int_count -ge $int_max_count ]]; then
                 var_input=$int_min
                 echo -e "Exceeded max attempts. Choice is set to default: ${var_input}"
                 break
@@ -539,7 +549,7 @@
             fi
 
             # <summary> Input is not valid. </summary>
-            echo -e "${str_output_varIsNotValid}"
+            echo -e "${str_output_var_is_not_valid}"
             (( int_count++ ))
         done
 
@@ -560,7 +570,7 @@
         # <params>
         declare -a arr_input=()
         declare -i int_count=0
-        declare -ir int_maxCount=3
+        declare -ir int_max_count=3
         local str_output=""
         var_input=""
         # </params>
@@ -592,10 +602,10 @@
         readonly str_output+="\e[30;43m[${arr_input[@]}]:\e[0m"
 
         # <summary> Read input </summary>
-        while [[ $int_count -le $int_maxCount ]]; do
+        while [[ $int_count -le $int_max_count ]]; do
 
             # <summary> After given number of attempts, input is set to first choice. </summary>
-            if [[ $int_count -ge $int_maxCount ]]; then
+            if [[ $int_count -ge $int_max_count ]]; then
                 var_input=${arr_input[0]}
                 echo -e "Exceeded max attempts. Choice is set to default: ${var_input}"
                 break
@@ -621,7 +631,7 @@
             fi
 
             # <summary> Input is not valid. </summary>
-            echo -e "${str_output_varIsNotValid}"
+            echo -e "${str_output_var_is_not_valid}"
             (( int_count++ ))
         done
 
@@ -643,7 +653,7 @@
         # <params>
         declare -a arr_input=()
         declare -i int_count=0
-        declare -ir int_maxCount=3
+        declare -ir int_max_count=3
         local str_output=""
         var_input=""
         # </params>
@@ -675,10 +685,10 @@
         readonly str_output+="\e[30;43m[${arr_input[@]}]:\e[0m"
 
         # <summary> Read input </summary>
-        while [[ $int_count -le $int_maxCount ]]; do
+        while [[ $int_count -le $int_max_count ]]; do
 
             # <summary> After given number of attempts, input is set to first choice. </summary>
-            if [[ $int_count -ge $int_maxCount ]]; then
+            if [[ $int_count -ge $int_max_count ]]; then
                 var_input=${arr_input[0]}
                 echo -en " Exceeded max attempts. Choice is set to default: ${var_input}"
                 break
@@ -703,7 +713,7 @@
             fi
 
             # <summary> Input is not valid. </summary>
-            echo -e "${str_output_varIsNotValid}"
+            echo -e "${str_output_var_is_not_valid}"
             (( int_count++ ))
         done
 
