@@ -35,25 +35,7 @@
     declare -gr str_output_var_is_not_valid="${var_prefix_error} Invalid input."
 # </params>
 
-# <summary> Toggle Debug </summary>                             # not working
-# <params>
-    declare -g bool_is_enabled_debug=false
-# </params>
-# <code>
-    # <summary> Append debug </summary>
-    # <param name="$bool_is_enabled_debug"> the toggle </param>
-    # <returns> void</returns>
-    function ExecuteDebug
-    {
-        if [[ $bool_is_enabled_debug == true ]]; then
-            "$@"
-        else
-            "$@" >/dev/null 2>&1
-        fi
-    }
-# </code>
-
-# <summary> Important </summary>
+# <summary> Exit codes </summary>
 # <code>
     # <summary> Append Pass or Fail given exit code. If Fail, call SaveExitCode. </summary>
     # <returns> output statement </returns>
@@ -68,23 +50,6 @@
                 echo -e $var_suffix_fail
                 return $int_exit_code;;
         esac
-    }
-
-    # <summary> Check if current user is sudo or root. </summary>
-    # <returns> void </returns>
-    function CheckIfUserIsRoot
-    {
-        # <params>
-        local readonly str_file=$( basename $0 )
-        local readonly str_output_user_is_not_root="${var_prefix_warn} User is not Sudo/Root.\nIn terminal, enter:\t'sudo bash ${str_file}'"
-        # </params>
-
-        if [[ $( whoami ) != "root" ]]; then
-            echo -e $str_output_user_is_not_root
-            return 1
-        fi
-
-        return 0
     }
 
     # <summary> Save last exit code. </summary>
@@ -214,137 +179,23 @@
     }
 # </code>
 
-# <summary> Device validation </summary>
+# <summary> User validation </summary>
 # <code>
-    # <summary> Check if current kernel and distro are supported, and if the expected Package Manager is installed. </summary>
-    # <returns> exit code </returns>
-    function CheckLinuxDistro
+    # <summary> Check if current user is sudo or root. </summary>
+    # <returns> void </returns>
+    function CheckIfUserIsRoot
     {
         # <params>
-        local bool=false
-        local readonly str_kernel="$( uname -o )"
-        local readonly str_OS="$( lsb_release -is )"
-        local str_package_manager=""
-        local readonly str_output_distro_is_not_valid="${var_prefix_error} OS '${str_OS}' is not supported."
-        local readonly str_output_kernel_is_not_valid="${var_prefix_error} Kernel '${str_kernel}' is not supported."
-
-        local readonly arr_package_managers=(
-            "apt"
-            "dnf yum"
-            "pacman"
-            "portage"
-            "urpmi"
-            "zypper"
-        )
-
-        local readonly arr_sort_OS_by_package_manager=(
-            # apt       (debian)
-            "debian bodhi deepin knoppix mint peppermint pop ubuntu kubuntu lubuntu xubuntu "
-
-            # dnf/yum   (redhat)
-            "redhat berry centos cern clearos elastix fedora fermi frameos mageia opensuse oracle scientific suse"
-
-            # pacman    (arch)
-            "arch manjaro"
-
-            # # portage   (gentoo)
-            # "gentoo"
-
-            # # urpmi     (openSUSE)
-            # "opensuse"
-
-            # # zypper
-            # "mandriva mageia"
-        )
+        local readonly str_file=$( basename $0 )
+        local readonly str_output_user_is_not_root="${var_prefix_warn} User is not Sudo/Root.\nIn terminal, enter:\t'sudo bash ${str_file}'"
         # </params>
 
-        if ! CheckIfVarIsValid $str_kernel; then
-            return $?
-        fi
-
-        if ! CheckIfVarIsValid $str_OS; then
-            return $?
-        fi
-
-        if [[ $( echo $str_kernel | tr '[:upper:]' '[:lower:]' ) != *"linux"* ]]; then
-            echo -e $str_output_kernel_is_not_valid
-            return 1
-        fi
-
-        ### new ###
-        function GetPackageManagerForOS
-        {
-            local int_max_count=$( expr ${#arr_package_managers[@]} - 1 )
-
-            for int_delimiter in {1..$int_max_count}; do
-                str_package_manager=$( echo ${arr_package_managers[$var_key]} | cut -d ' ' -f $int_delimiter )
-
-                if CheckIfCommandIsInstalled $var_element2; then
-                    bool=true
-                    break
-                fi
-            done
-        }
-
-        case *$( echo $str_OS | tr '[:upper:]' '[:lower:]' )* in
-            "${arr_sort_OS_by_package_manager[0]}" )
-                GetPackageManagerForOS;;
-
-            "${arr_sort_OS_by_package_manager[1]}" )
-                GetPackageManagerForOS;;
-
-            "${arr_sort_OS_by_package_manager[2]}" )
-                GetPackageManagerForOS;;
-        esac
-
-        ### old ###
-        # for var_key in ${!arr_sort_OS_by_package_manager[@]}; do
-        #     # local int_max_count=$( expr ${#arr_package_managers[@]} - 1 )
-        #     local var_element1=${arr_sort_OS_by_package_manager[$var_key]}
-
-        #     if [[ "${var_element1}" == *$( echo $str_OS | tr '[:upper:]' '[:lower:]' )* ]]; then
-        #         for int_delimiter in {1..$int_max_count}; do
-        #             str_package_manager=$( echo ${arr_package_managers[$var_key]} | cut -d ' ' -f $int_delimiter )
-
-        #             if CheckIfCommandIsInstalled $var_element2; then
-        #                 bool=true
-        #                 break
-        #             fi
-        #         done
-        #     fi
-
-        #     if [[ $bool == true ]]; then
-        #         break
-        #     fi
-        # done
-
-        if [[ $bool == false ]]; then
-            str_package_manager=""
-            echo -e $str_output_distro_is_not_valid
+        if [[ $( whoami ) != "root" ]]; then
+            echo -e $str_output_user_is_not_root
             return 1
         fi
 
         return 0
-    }
-
-    # <summary> Test network connection to Internet. Ping DNS servers by address and name. </summary>
-    # <returns> exit code </returns>
-    function TestNetwork
-    {
-        echo -en "Testing Internet connection...\t"
-        ( ping -q -c 1 8.8.8.8 || ping -q -c 1 1.1.1.1 ) || false
-        AppendPassOrFail
-
-        echo -en "Testing connection to DNS...\t"
-        ( ping -q -c 1 www.google.com && ping -q -c 1 www.yandex.com ) || false
-        AppendPassOrFail
-
-        if [[ $int_exit_code -ne 0 ]]; then
-            echo -e "Failed to ping Internet/DNS servers. Check network settings or firewall, and try again."
-            return $int_exit_code
-        fi
-
-        SaveExitCode; return 0
     }
 # </code>
 
@@ -443,6 +294,112 @@
         )
 
         return 0
+    }
+# </code>
+
+# <summary> Device validation </summary>
+# <code>
+    # <summary> Check if current kernel and distro are supported, and if the expected Package Manager is installed. </summary>
+    # <returns> exit code </returns>
+    function CheckLinuxDistro
+    {
+        # <params>
+        local bool=false
+        local readonly str_kernel="$( uname -o )"
+        local readonly str_OS="$( lsb_release -is | tr '[:upper:]' '[:lower:]' )"
+        local str_package_manager=""
+        local readonly str_output_distro_is_not_valid="${var_prefix_error} Distribution '${str_OS}' is not supported."
+        local readonly str_output_kernel_is_not_valid="${var_prefix_error} Kernel '${str_kernel}' is not supported."
+        local readonly str_OS_with_apt="debian bodhi deepin knoppix mint peppermint pop ubuntu kubuntu lubuntu xubuntu "
+        local readonly str_OS_with_dnf_yum="redhat berry centos cern clearos elastix fedora fermi frameos mageia opensuse oracle scientific suse"
+        local readonly str_OS_with_pacman="arch manjaro"
+        local readonly str_OS_with_portage="gentoo"
+        local readonly str_OS_with_urpmi="opensuse"
+        local readonly str_OS_with_zypper="mandriva mageia"
+        # </params>
+
+        if ! CheckIfVarIsValid $str_kernel &> /dev/null; then
+            return $?
+        fi
+
+        if ! CheckIfVarIsValid $str_OS &> /dev/null; then
+            return $?
+        fi
+
+        if [[ $( echo $str_kernel | tr '[:upper:]' '[:lower:]' ) != *"linux"* ]]; then
+            echo -e $str_output_kernel_is_not_valid
+            return 1
+        fi
+
+        echo $str_OS_with_apt
+
+        case $( echo $str_OS | tr '[:upper:]' '[:lower:]' ) in
+            *"${str_OS_with_apt}"* )
+                str_package_manager="apt"
+                CheckIfCommandIsInstalled $str_package_manager &> /dev/null
+                ;;
+
+            *"${str_OS_with_dnf_yum}"* )
+                str_package_manager="dnf"
+                CheckIfCommandIsInstalled $str_package_manager &> /dev/null
+
+                str_package_manager="yum"
+                CheckIfCommandIsInstalled $str_package_manager &> /dev/null
+                ;;
+
+            *"${str_OS_with_pacman}"* )
+                str_package_manager="pacman"
+                CheckIfCommandIsInstalled $str_package_manager &> /dev/null
+                ;;
+
+            # *"${str_OS_with_portage}"* )
+            #     str_package_manager="portage"
+            #     CheckIfCommandIsInstalled $str_package_manager &> /dev/null
+            #     ;;
+
+            # *"${str_OS_with_urpmi}"* )
+            #     str_package_manager="urpmi"
+            #     CheckIfCommandIsInstalled $str_package_manager &> /dev/null
+            #     ;;
+
+            # *"${str_OS_with_zypper}"* )
+            #     str_package_manager="zypper"
+            #     CheckIfCommandIsInstalled $str_package_manager &> /dev/null
+            #     ;;
+
+            * )
+                false;;
+        esac
+
+
+        if [[ "$?" -ne 0 ]]; then
+            echo $str_package_manager
+            str_package_manager=""
+            echo -e $str_output_distro_is_not_valid
+            return 1
+        fi
+
+        return 0
+    }
+
+    # <summary> Test network connection to Internet. Ping DNS servers by address and name. </summary>
+    # <returns> exit code </returns>
+    function TestNetwork
+    {
+        echo -en "Testing Internet connection...\t"
+        ( ping -q -c 1 8.8.8.8 || ping -q -c 1 1.1.1.1 ) || false
+        AppendPassOrFail
+
+        echo -en "Testing connection to DNS...\t"
+        ( ping -q -c 1 www.google.com && ping -q -c 1 www.yandex.com ) || false
+        AppendPassOrFail
+
+        if [[ $int_exit_code -ne 0 ]]; then
+            echo -e "Failed to ping Internet/DNS servers. Check network settings or firewall, and try again."
+            return $int_exit_code
+        fi
+
+        SaveExitCode; return 0
     }
 # </code>
 
@@ -580,48 +537,38 @@
         # </params>
 
         # <summary> Minimum multiple choice are two answers. </summary>
-        if CheckIfVarIsValid $2; then
+        if CheckIfVarIsValid $2 &> /dev/null; then
             arr_input+=( $2 )
         else
             echo -e $str_output_multiple_choice_not_valid
             return 1;
         fi
 
-        if CheckIfVarIsValid $3; then
+        if CheckIfVarIsValid $3 &> /dev/null; then
             arr_input+=( $3 )
         else
             echo -e $str_output_multiple_choice_not_valid
             return 1;
         fi
 
-        if CheckIfVarIsValid $4; then arr_input+=( $4 ); fi
-        if CheckIfVarIsValid $5; then arr_input+=( $5 ); fi
-        if CheckIfVarIsValid $6; then arr_input+=( $6 ); fi
-        if CheckIfVarIsValid $7; then arr_input+=( $7 ); fi
-        if CheckIfVarIsValid $8; then arr_input+=( $8 ); fi
-        if CheckIfVarIsValid $9; then arr_input+=( $9 ); fi
+        if CheckIfVarIsValid $4 &> /dev/null; then arr_input+=( $4 ); fi
+        if CheckIfVarIsValid $5 &> /dev/null; then arr_input+=( $5 ); fi
+        if CheckIfVarIsValid $6 &> /dev/null; then arr_input+=( $6 ); fi
+        if CheckIfVarIsValid $7 &> /dev/null; then arr_input+=( $7 ); fi
+        if CheckIfVarIsValid $8 &> /dev/null; then arr_input+=( $8 ); fi
+        if CheckIfVarIsValid $9 &> /dev/null; then arr_input+=( $9 ); fi
 
-        if CheckIfVarIsValid $1; then
+        if CheckIfVarIsValid $1 &> /dev/null; then
             str_output="$1 "
         fi
 
         readonly str_output+="${var_green}[${arr_input[@]}]:${var_reset}"
 
         # <summary> Read input </summary>
-        while [[ $int_count -le $int_max_count ]]; do
-
-            # <summary> After given number of attempts, input is set to first choice. </summary>
-            if [[ $int_count -ge $int_max_count ]]; then
-                var_input=${arr_input[0]}
-                echo -e "Exceeded max attempts. Choice is set to default: ${var_input}"
-                break
-            fi
-
-            # <summary> Append output. </summary>
+        for int_count in {0..2}; do
             echo -en "${str_output} "
             read var_input
 
-            # <summary> Check if input is valid. </summary>
             if CheckIfVarIsValid $var_input; then
                 var_input=$( echo $var_input | tr '[:lower:]' '[:upper:]' )
 
@@ -633,11 +580,11 @@
                 done
             fi
 
-            # <summary> Input is not valid. </summary>
             echo -e "${str_output_var_is_not_valid}"
-            (( int_count++ ))
         done
 
+        var_input=${arr_input[0]}
+        echo -e "Exceeded max attempts. Choice is set to default: ${var_input}"
         return 1
     }
 
@@ -655,57 +602,45 @@
     {
         # <params>
         declare -a arr_input=()
-        declare -i int_count=0
-        declare -ir int_max_count=3
         local str_output=""
         local readonly str_output_multiple_choice_not_valid="${var_prefix_error} Insufficient multiple choice answers."
         var_input=""
         # </params>
 
         # <summary> Minimum multiple choice are two answers. </summary>
-        if CheckIfVarIsValid $2; then
+        if CheckIfVarIsValid $2 &> /dev/null; then
             arr_input+=( $2 )
         else
             echo -e $str_output_multiple_choice_not_valid
             return 1;
         fi
 
-        if CheckIfVarIsValid $3; then
+        if CheckIfVarIsValid $3 &> /dev/null; then
             arr_input+=( $3 )
         else
             echo -e $str_output_multiple_choice_not_valid
             return 1;
         fi
 
-        if CheckIfVarIsValid $4; then arr_input+=( $4 ); fi
-        if CheckIfVarIsValid $5; then arr_input+=( $5 ); fi
-        if CheckIfVarIsValid $6; then arr_input+=( $6 ); fi
-        if CheckIfVarIsValid $7; then arr_input+=( $7 ); fi
-        if CheckIfVarIsValid $8; then arr_input+=( $8 ); fi
-        if CheckIfVarIsValid $9; then arr_input+=( $9 ); fi
+        if CheckIfVarIsValid $4 &> /dev/null; then arr_input+=( $4 ); fi
+        if CheckIfVarIsValid $5 &> /dev/null; then arr_input+=( $5 ); fi
+        if CheckIfVarIsValid $6 &> /dev/null; then arr_input+=( $6 ); fi
+        if CheckIfVarIsValid $7 &> /dev/null; then arr_input+=( $7 ); fi
+        if CheckIfVarIsValid $8 &> /dev/null; then arr_input+=( $8 ); fi
+        if CheckIfVarIsValid $9 &> /dev/null; then arr_input+=( $9 ); fi
 
-        if CheckIfVarIsValid $1; then
+        if CheckIfVarIsValid $1 &> /dev/null; then
             str_output="$1 "
         fi
 
         readonly str_output+="${var_green}[${arr_input[@]}]:${var_reset}"
 
         # <summary> Read input </summary>
-        while [[ $int_count -le $int_max_count ]]; do
-
-            # <summary> After given number of attempts, input is set to first choice. </summary>
-            if [[ $int_count -ge $int_max_count ]]; then
-                var_input=${arr_input[0]}
-                echo -e "Exceeded max attempts. Choice is set to default: ${var_input}"
-                break
-            fi
-
-            # <summary> Append output. </summary>
+        for int_count in {0..2}; do
             echo -en "${str_output} "
             read var_input
 
-            # <summary> Check if input is valid. </summary>
-            if CheckIfVarIsValid $var_input; then
+            if CheckIfVarIsValid $var_input &> /dev/null; then
                 for var_element in ${arr_input[@]}; do
                     if [[ "${var_input}" == "${var_element}" ]]; then
                         var_input=$var_element
@@ -714,11 +649,11 @@
                 done
             fi
 
-            # <summary> Input is not valid. </summary>
             echo -e "${str_output_var_is_not_valid}"
-            (( int_count++ ))
         done
 
+        var_input=${arr_input[0]}
+        echo -e "Exceeded max attempts. Choice is set to default: ${var_input}"
         return 1
     }
 # </code>
@@ -741,7 +676,7 @@
 # echo $var_input
 
 # var_input=""
-# ReadMultipleChoiceIgnoreCase "Multiple choice." "a" "B" "c"
+# ReadMultipleChoiceIgnoreCase "Multiple choice." 'a' 'B' 'c'
 # echo $var_input
 
 # ReadMultipleChoiceMatchCase "Multiple choice." "a" "B" "c"
@@ -767,7 +702,7 @@
 # CheckIfCommandIsInstalled "apt"
 # CheckIfCommandIsInstalled "windows-nt"
 
-CheckLinuxDistro      # not working
+CheckLinuxDistro
 
 # CheckIfUserIsRoot   # works
 
