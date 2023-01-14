@@ -328,12 +328,11 @@
     function CheckLinuxDistro
     {
         # <params>
-        local readonly str_kernel="$( uname -o )"
-        # local readonly str_operating_system="$( lsb_release -is | tr '[:upper:]' '[:lower:]' )"
-        str_operating_system="arch"
+        local readonly str_kernel="$( uname -o | tr '[:upper:]' '[:lower:]' )"
+        local readonly str_operating_system="$( lsb_release -is | tr '[:upper:]' '[:lower:]' )"
         local str_package_manager=""
         local readonly str_output_distro_is_not_valid="${var_prefix_error} Distribution '$( lsb_release -is )' is not supported."
-        local readonly str_output_kernel_is_not_valid="${var_prefix_error} Kernel '${str_kernel}' is not supported."
+        local readonly str_output_kernel_is_not_valid="${var_prefix_error} Kernel '$( uname -o )' is not supported."
         local readonly str_OS_with_apt="debian bodhi deepin knoppix mint peppermint pop ubuntu kubuntu lubuntu xubuntu "
         local readonly str_OS_with_dnf_yum="redhat berry centos cern clearos elastix fedora fermi frameos mageia opensuse oracle scientific suse"
         local readonly str_OS_with_pacman="arch manjaro"
@@ -350,7 +349,7 @@
             return $?
         fi
 
-        if [[ $( echo $str_kernel | tr '[:upper:]' '[:lower:]' ) != *"linux"* ]]; then
+        if [[ "${str_kernel}" != *"linux"* ]]; then
             echo -e $str_output_kernel_is_not_valid
             return 1
         fi
@@ -361,10 +360,10 @@
         {
             if [[ ${str_OS_with_apt} =~ .*"${str_operating_system}".* ]]; then
                 str_package_manager="apt"
-                CheckIfCommandIsInstalled $str_package_manager &> /dev/null
+                CheckIfCommandIsInstalled $str_package_manager &> /dev/null && return 0
 
             elif [[ ${str_OS_with_dnf_yum} =~ .*"${str_operating_system}".* ]]; then
-                str_package_manager="apt"
+                str_package_manager="dnf"
                 CheckIfCommandIsInstalled $str_package_manager &> /dev/null && return 0
 
                 str_package_manager="yum"
@@ -372,19 +371,19 @@
 
             elif [[ ${str_OS_with_pacman} =~ .*"${str_operating_system}".* ]]; then
                 str_package_manager="pacman"
-                CheckIfCommandIsInstalled $str_package_manager &> /dev/null
+                CheckIfCommandIsInstalled $str_package_manager &> /dev/null && return 0
 
             elif [[ ${str_OS_with_portage} =~ .*"${str_operating_system}".* ]]; then
                 str_package_manager="portage"
-                CheckIfCommandIsInstalled $str_package_manager &> /dev/null
+                CheckIfCommandIsInstalled $str_package_manager &> /dev/null && return 0
 
             elif [[ ${str_OS_with_urpmi} =~ .*"${str_operating_system}".* ]]; then
                 str_package_manager="urpmi"
-                CheckIfCommandIsInstalled $str_package_manager &> /dev/null
+                CheckIfCommandIsInstalled $str_package_manager &> /dev/null && return 0
 
             elif [[ ${str_OS_with_zypper} =~ .*"${str_operating_system}".* ]]; then
                 str_package_manager="zypper"
-                CheckIfCommandIsInstalled $str_package_manager &> /dev/null
+                CheckIfCommandIsInstalled $str_package_manager &> /dev/null && return 0
 
             else
                 str_package_manager=""
@@ -745,7 +744,8 @@
     # CheckIfCommandIsInstalled $var
     # echo "$?"
 
-    CheckLinuxDistro
+    # # works
+    # CheckLinuxDistro
 
     # # works
     # CheckIfUserIsRoot
