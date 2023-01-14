@@ -34,7 +34,7 @@ Collection of custom functions to be used as a library for Bash scripts.
 
 
 ## Key
-* (*) == out-of-scope; call function before calling variable of exact name.
+    (*) == out-of-scope; call function before calling variable of exact name.
 
 ## How-to
 Copy the code above to your bash script.
