@@ -1,12 +1,10 @@
 #!/bin/bash sh
 
-### disclaimer ###
 #
 # Author(s):    Alex Portell <github.com/portellam>
 #
-###
 
-# <summary> Global parameters </summary>
+# <summary> #0 - Global parameters </summary>
 # <params>
     declare -gl str_package_manager=""
 
@@ -39,7 +37,7 @@
     declare -gr str_output_var_is_not_valid="${var_prefix_error} Invalid input."
 # </params>
 
-# <summary> Exit codes </summary>
+# <summary> #1 - Exit codes </summary>
 # <code>
     # <summary> Append Pass or Fail given exit code. If Fail, call SaveExitCode. </summary>
     # <returns> output statement </returns>
@@ -66,7 +64,7 @@
 
 # </code>
 
-# <summary> Data-type and variable validation </summary>
+# <summary> #2 - Data-type and variable validation </summary>
 # <code>
     # <summary> Check if the command is installed. </summary>
     # <param name="$1"> the command </param>
@@ -182,7 +180,7 @@
     }
 # </code>
 
-# <summary> User validation </summary>
+# <summary> #3 - User validation </summary>
 # <code>
     # <summary> Check if current user is sudo or root. </summary>
     # <returns> void </returns>
@@ -202,7 +200,7 @@
     }
 # </code>
 
-# <summary> File operation and validation </summary>
+# <summary> #4 - File operation and validation </summary>
 # <code>
     # <summary> Create a directory. </summary>
     # <param name="$1"> the directory </param>
@@ -270,9 +268,31 @@
         return 0
     }
 
+    # <summary> Read input from a file. Declare '$var_file' before calling this function. </summary>
+    # <param name="$1"> the file </param>
+    # <param name="$var_file"> the file contents </param>
+    # <returns> exit code </returns>
+    #
+    function ReadFromFile
+    {
+        # <params>
+        local readonly str_output_fail="${var_prefix_fail} Could not read from file '$1'."
+        var_file=$( cat $1 )
+        # </params>
+
+        if ! CheckIfFileExists $1; then
+            return "$?"
+        fi
+
+        if ! CheckIfVarIsValid ${var_file[@]}; then
+            return "$?"
+        fi
+
+        return 0
+    }
+
     # <summary> Write output to a file. Declare '$var_file' before calling this function. </summary>
     # <param name="$1"> the file </param>
-    # <param name="$2"> the output </param>
     # <param name="$var_file"> the file contents </param>
     # <returns> exit code </returns>
     #
@@ -280,18 +300,17 @@
     {
         # <params>
         local readonly str_output_fail="${var_prefix_fail} Could not write to file '$1'."
-        local var_output=$( echo -e "${var_file[@]}" )
         # </params>
 
         if ! CheckIfFileExists $1; then
             return "$?"
         fi
 
-        if ! CheckIfVarIsValid $var_output; then
+        if ! CheckIfVarIsValid $var_file; then
             return "$?"
         fi
 
-        ( printf "%s\n" "${var_output[@]}" >> $1 ) || (
+        ( printf "%s\n" "${var_file[@]}" >> $1 ) || (
             echo -e $str_output_fail
             return 1
         )
@@ -300,7 +319,7 @@
     }
 # </code>
 
-# <summary> Device validation </summary>
+# <summary> #5 - Device validation </summary>
 # <code>
     # <summary> Check if current kernel and distro are supported, and if the expected Package Manager is installed. </summary>
     # <returns> exit code </returns>
@@ -402,7 +421,7 @@
     }
 # </code>
 
-# <summary> User input </summary>
+# <summary> #6 - User input </summary>
 # <code>
     # <summary> Ask user Yes/No, read input and return exit code given answer. </summary>
     # <param name="$1"> the (nullable) output statement </param>
@@ -640,69 +659,86 @@
     }
 # </code>
 
-# # works #
-# ReadInput "Hello world."
-# echo $?
+# <summary> Debug (not essential) </summary>
+# <code>
+    # # works #
+    # ReadInput "Hello world."
+    # echo $?
 
-# # works #
-# ReadInput
-# echo $?
+    # # works #
+    # ReadInput
+    # echo $?
 
-# # works #
-# ReadInputFromRangeOfTwoNums "Enter an 8-bit value." 0 255
-# echo $var_input
+    # # works #
+    # ReadInputFromRangeOfTwoNums "Enter an 8-bit value." 0 255
+    # echo $var_input
 
-# # works #
-# ReadInputFromRangeOfTwoNums "This range is not correct" "A" "B"
-# echo $var_input
+    # # works #
+    # ReadInputFromRangeOfTwoNums "This range is not correct" "A" "B"
+    # echo $var_input
 
-# # works #
-# ReadMultipleChoiceIgnoreCase "Multiple choice." 'a' 'B' 'c'
-# echo $var_input
+    # # works #
+    # ReadMultipleChoiceIgnoreCase "Multiple choice." 'a' 'B' 'c'
+    # echo $var_input
 
-# # works #
-# ReadMultipleChoiceIgnoreCase "Incorrect Multiple choice." 'a'
-# echo $var_input
+    # # works #
+    # ReadMultipleChoiceIgnoreCase "Incorrect Multiple choice." 'a'
+    # echo $var_input
 
-# # works #
-# ReadMultipleChoiceMatchCase "Multiple choice." "a" "B" "c"
-# echo $var_input
+    # # works #
+    # ReadMultipleChoiceMatchCase "Multiple choice." "a" "B" "c"
+    # echo $var_input
 
-# # works #
-# ReadMultipleChoiceMatchCase "Incorrect Multiple choice." 'a'
-# echo $var_input
+    # # works #
+    # ReadMultipleChoiceMatchCase "Incorrect Multiple choice." 'a'
+    # echo $var_input
 
-# # works #
-# str="newfile.txt"
-# CreateFile $str
-# echo "$?"
+    # # works #
+    # str="newfile.txt"
+    # CreateFile $str
+    # echo "$?"
 
-# # works #
-# CreateFile ""
-# echo "$?"
+    # # works #
+    # CreateFile ""
+    # echo "$?"
 
-declare -a var_file=( "Hello" "World" )
-WriteToFile $str
-echo "$?"
+    # # works #
+    # str="newfile.txt"
+    # var_file="Hello
+    # World"
 
-# cat $str
+    # # works #
+    # str="newfile.txt"
+    # WriteToFile $str
+    # echo "$?"
 
-# DeleteFile $str
-# echo "$?"
+    # # works #
+    # str="newfile.txt"
+    # ReadFromFile $str
+    # echo "$?"
 
-# TestNetwork
+    # # works #
+    # for var_element in ${var_file[@]}; do
+    #     echo $var_element
+    # done
 
-# CheckIfCommandIsInstalled "apt"
-# CheckIfCommandIsInstalled "windows-nt"
+    # # works #
+    # str="newfile.txt"
+    # DeleteFile $str
+    # echo "$?"
 
-# CheckLinuxDistro      # works
+    TestNetwork
 
-# CheckIfUserIsRoot     # works
+    # CheckIfCommandIsInstalled "apt"
+    # CheckIfCommandIsInstalled "windows-nt"
+
+    # CheckLinuxDistro      # works
+
+    # CheckIfUserIsRoot     # works
+# </code>
+
+#
+# YOUR CODE BELOW
+#
 
 exit 0
-
-# NOTES
-#   function to retry given command x times before giving up
-#   example: if a download fails five times, test network, and then quit.
-#
-#
