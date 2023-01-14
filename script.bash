@@ -660,7 +660,7 @@
     }
 # </code>
 
-# <summary> Debug (not essential) </summary>
+# <summary> Debug (not essential), use as a reference or delete if you wish. </summary>
 # <code>
     # # works #
     # ReadInput "Hello world."
