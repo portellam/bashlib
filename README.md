@@ -32,7 +32,6 @@ Collection of custom functions to be used as a library for Bash scripts.
     * Read input from range of numbers.*
     * Read multiple-choice (ignore-case or match-case).*
 
-
 ## Key
     (*) == out-of-scope; call function before calling variable of exact name.
 
