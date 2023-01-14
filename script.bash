@@ -19,17 +19,21 @@
     declare -gir int_code_cmd_is_null=251
     declare -gi int_exit_code="$?"
 
-    # <summary> Color coding </summary>
+    # <summary>
+    # Color coding
+    # Reference URL: 'https://www.shellhacks.com/bash-colors'
+    # </summary>
+    declare -gr var_blinking_red='\033[0;31;5m'
+    declare -gr var_green='\033[0;32m'
+    declare -gr var_red='\033[0;31m'
+    declare -gr var_yellow='\033[0;33m'
     declare -gr var_reset='\033[0m'
-    declare -gr var_red='\033[38;5;2m'
-    declare -gr var_green='\033[38;5;2m'
-    declare -gr var_yellow='\033[38;5;3m'
 
     # <summary> Append output </summary>
     declare -gr var_prefix_error="${var_yellow}Error:${var_reset}"
     declare -gr var_prefix_fail="${var_red}Failure:${var_reset}"
     declare -gr var_prefix_pass="${var_green}Success:${var_reset}"
-    declare -gr var_prefix_warn="${var_yellow}Warning:${var_reset}"
+    declare -gr var_prefix_warn="${var_blinking_red}Warning:${var_reset}"
     declare -gr var_suffix_fail="${var_red}Failure${var_reset}"
     declare -gr var_suffix_pass="${var_green}Success${var_reset}"
     declare -gr str_output_var_is_not_valid="${var_prefix_error} Invalid input."
@@ -232,7 +236,7 @@
         local readonly str_output_fail="${var_prefix_fail} Could not create file '$1'."
         # </params>
 
-        if CheckIfFileExists $1; then
+        if CheckIfFileExists $1 &> /dev/null; then
             return 0
         fi
 
@@ -668,15 +672,18 @@
 # ReadMultipleChoiceMatchCase "Incorrect Multiple choice." 'a'
 # echo $var_input
 
+# # works #
 # str="newfile.txt"
-# echo $str
-
 # CreateFile $str
 # echo "$?"
 
-# declare -a var_file=( "Hello" "World" )
-# WriteToFile $str
+# # works #
+# CreateFile ""
 # echo "$?"
+
+declare -a var_file=( "Hello" "World" )
+WriteToFile $str
+echo "$?"
 
 # cat $str
 
