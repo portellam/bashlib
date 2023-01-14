@@ -74,13 +74,15 @@
     {
         # <params>
         local readonly str_output_cmd_is_null="${var_prefix_error} Command '$1' is not installed."
+        local readonly var_actual_install_path=$( command -v $1 )
+        local readonly var_expected_install_path="/usr/bin/$1"
         # </params>
 
         if ! CheckIfVarIsValid $1; then
             return $?
         fi
 
-        if ! CheckIfVarIsValid $( command -v $1 ); then
+        if $( ! CheckIfVarIsValid $var_actual_install_path ) &> /dev/null || [[ "${var_actual_install_path}" != "${var_expected_install_path}" ]]; then
             echo -e $str_output_cmd_is_null
             return $int_code_cmd_is_null
         fi
@@ -188,7 +190,7 @@
     {
         # <params>
         local readonly str_file=$( basename $0 )
-        local readonly str_output_user_is_not_root="${var_prefix_warn} User is not Sudo/Root.\nIn terminal, enter:\t'sudo bash ${str_file}'"
+        local readonly str_output_user_is_not_root="${var_prefix_warn} User is not Sudo/Root. In terminal, enter: ${var_yellow}'sudo bash ${str_file}' ${var_reset}"
         # </params>
 
         if [[ $( whoami ) != "root" ]]; then
@@ -405,11 +407,11 @@
     function TestNetwork
     {
         echo -en "Testing Internet connection...\t"
-        ( ping -q -c 1 8.8.8.8 || ping -q -c 1 1.1.1.1 ) || false
+        ( ping -q -c 1 8.8.8.8 || ping -q -c 1 1.1.1.1 ) &> /dev/null || false
         AppendPassOrFail
 
         echo -en "Testing connection to DNS...\t"
-        ( ping -q -c 1 www.google.com && ping -q -c 1 www.yandex.com ) || false
+        ( ping -q -c 1 www.google.com && ping -q -c 1 www.yandex.com ) &> /dev/null || false
         AppendPassOrFail
 
         if [[ $int_exit_code -ne 0 ]]; then
@@ -727,14 +729,26 @@
     # DeleteFile $str
     # echo "$?"
 
-    TestNetwork
+    # # works #
+    # TestNetwork
+    # echo "$?"
 
-    # CheckIfCommandIsInstalled "apt"
-    # CheckIfCommandIsInstalled "windows-nt"
+    # # works #
+    # var="apt"
+    # echo $var
+    # CheckIfCommandIsInstalled $var
+    # echo "$?"
 
-    # CheckLinuxDistro      # works
+    # # works #
+    # var="windows-nt"
+    # echo $var
+    # CheckIfCommandIsInstalled $var
+    # echo "$?"
 
-    # CheckIfUserIsRoot     # works
+    CheckLinuxDistro
+
+    # # works
+    # CheckIfUserIsRoot
 # </code>
 
 #
