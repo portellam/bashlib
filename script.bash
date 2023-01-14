@@ -62,7 +62,7 @@
 
 # </code>
 
-# <summary> Input validation </summary>
+# <summary> Data-type and variable validation </summary>
 # <code>
     # <summary> Check if the command is installed. </summary>
     # <param name="$1"> the command </param>
@@ -118,18 +118,17 @@
     {
         # <params>
         local readonly str_output_var_is_NAN="${var_prefix_error} NaN."
+        local readonly str_num_regex='^[0-9]+$'
         # </params>
 
         if ! CheckIfVarIsValid $1; then
             return $?
         fi
 
-        case $1 in
-            ''|*[!0-9]*)
-                echo -e $str_output_var_is_NAN
-                return $int_code_var_is_NAN
-                ;;
-        esac
+        if ! [[ $1 =~ $str_num_regex ]]; then
+            echo -e $str_output_var_is_NAN
+            return $int_code_var_is_NAN
+        fi
 
         return 0
     }
@@ -199,7 +198,7 @@
     }
 # </code>
 
-# <summary> File operation </summary>
+# <summary> File operation and validation </summary>
 # <code>
     # <summary> Create a directory. </summary>
     # <param name="$1"> the directory </param>
@@ -304,11 +303,11 @@
     function CheckLinuxDistro
     {
         # <params>
-        local bool=false
         local readonly str_kernel="$( uname -o )"
-        local readonly str_OS="$( lsb_release -is | tr '[:upper:]' '[:lower:]' )"
+        # local readonly str_operating_system="$( lsb_release -is | tr '[:upper:]' '[:lower:]' )"
+        str_operating_system="arch"
         local str_package_manager=""
-        local readonly str_output_distro_is_not_valid="${var_prefix_error} Distribution '${str_OS}' is not supported."
+        local readonly str_output_distro_is_not_valid="${var_prefix_error} Distribution '$( lsb_release -is )' is not supported."
         local readonly str_output_kernel_is_not_valid="${var_prefix_error} Kernel '${str_kernel}' is not supported."
         local readonly str_OS_with_apt="debian bodhi deepin knoppix mint peppermint pop ubuntu kubuntu lubuntu xubuntu "
         local readonly str_OS_with_dnf_yum="redhat berry centos cern clearos elastix fedora fermi frameos mageia opensuse oracle scientific suse"
@@ -322,7 +321,7 @@
             return $?
         fi
 
-        if ! CheckIfVarIsValid $str_OS &> /dev/null; then
+        if ! CheckIfVarIsValid $str_operating_system &> /dev/null; then
             return $?
         fi
 
@@ -331,50 +330,46 @@
             return 1
         fi
 
-        echo $str_OS_with_apt
-
-        case $( echo $str_OS | tr '[:upper:]' '[:lower:]' ) in
-            *"${str_OS_with_apt}"* )
+        # <summary> Check if current Operating System matches Package Manager, and Check if PM is installed. </summary>
+        # <returns> exit code </returns>
+        function CheckLinuxDistro_GetPackageManagerByOS
+        {
+            if [[ ${str_OS_with_apt} =~ .*"${str_operating_system}".* ]]; then
                 str_package_manager="apt"
                 CheckIfCommandIsInstalled $str_package_manager &> /dev/null
-                ;;
 
-            *"${str_OS_with_dnf_yum}"* )
-                str_package_manager="dnf"
-                CheckIfCommandIsInstalled $str_package_manager &> /dev/null
+            elif [[ ${str_OS_with_dnf_yum} =~ .*"${str_operating_system}".* ]]; then
+                str_package_manager="apt"
+                CheckIfCommandIsInstalled $str_package_manager &> /dev/null && return 0
 
                 str_package_manager="yum"
-                CheckIfCommandIsInstalled $str_package_manager &> /dev/null
-                ;;
+                CheckIfCommandIsInstalled $str_package_manager &> /dev/null && return 0
 
-            *"${str_OS_with_pacman}"* )
+            elif [[ ${str_OS_with_pacman} =~ .*"${str_operating_system}".* ]]; then
                 str_package_manager="pacman"
                 CheckIfCommandIsInstalled $str_package_manager &> /dev/null
-                ;;
 
-            # *"${str_OS_with_portage}"* )
-            #     str_package_manager="portage"
-            #     CheckIfCommandIsInstalled $str_package_manager &> /dev/null
-            #     ;;
+            elif [[ ${str_OS_with_portage} =~ .*"${str_operating_system}".* ]]; then
+                str_package_manager="portage"
+                CheckIfCommandIsInstalled $str_package_manager &> /dev/null
 
-            # *"${str_OS_with_urpmi}"* )
-            #     str_package_manager="urpmi"
-            #     CheckIfCommandIsInstalled $str_package_manager &> /dev/null
-            #     ;;
+            elif [[ ${str_OS_with_urpmi} =~ .*"${str_operating_system}".* ]]; then
+                str_package_manager="urpmi"
+                CheckIfCommandIsInstalled $str_package_manager &> /dev/null
 
-            # *"${str_OS_with_zypper}"* )
-            #     str_package_manager="zypper"
-            #     CheckIfCommandIsInstalled $str_package_manager &> /dev/null
-            #     ;;
+            elif [[ ${str_OS_with_zypper} =~ .*"${str_operating_system}".* ]]; then
+                str_package_manager="zypper"
+                CheckIfCommandIsInstalled $str_package_manager &> /dev/null
 
-            * )
-                false;;
-        esac
+            else
+                str_package_manager=""
+                return 1
+            fi
 
+            return 1
+        }
 
-        if [[ "$?" -ne 0 ]]; then
-            echo $str_package_manager
-            str_package_manager=""
+        if ! CheckLinuxDistro_GetPackageManagerByOS; then
             echo -e $str_output_distro_is_not_valid
             return 1
         fi
@@ -417,7 +412,7 @@
         local str_output=""
         # </params>
 
-        if CheckIfVarIsValid $1; then
+        if CheckIfVarIsValid $1 &> /dev/null; then
             str_output="$1 "
         fi
 
@@ -466,35 +461,30 @@
         # <params>
         declare -i int_count=0
         declare -ir int_max_count=3
-        declare -ir int_min=$2
-        declare -ir int_max=$3
+        local readonly var_min=$2
+        local readonly var_max=$3
         local str_output=""
         local readonly str_output_extrema_are_not_valid="${var_prefix_error} Extrema are not valid."
         var_input=""
         # </params>
 
-        if ! CheckIfVarIsNum $int_min; then
+        if ( ! CheckIfVarIsNum $var_min || ! CheckIfVarIsNum $var_max ) &> /dev/null ; then
             echo -e $str_output_extrema_are_not_valid
             return 1
         fi
 
-        if ! CheckIfVarIsNum $int_max; then
-            echo -e $str_output_extrema_are_not_valid
-            return 1
-        fi
-
-        if CheckIfVarIsValid $1; then
+        if CheckIfVarIsValid $1 &> /dev/null; then
             str_output="$1 "
         fi
 
-        readonly str_output+="${var_green}[${int_min}-${int_max}]:${var_reset}"
+        readonly str_output+="${var_green}[${var_min}-${var_max}]:${var_reset}"
 
         # <summary> Read input </summary>
         while [[ $int_count -le $int_max_count ]]; do
 
             # <summary> After given number of attempts, input is set to first choice. </summary>
             if [[ $int_count -ge $int_max_count ]]; then
-                var_input=$int_min
+                var_input=$var_min
                 echo -e "Exceeded max attempts. Choice is set to default: ${var_input}"
                 break
             fi
@@ -504,7 +494,7 @@
             read var_input
 
             # <summary> Check if input is valid. </summary>
-            if CheckIfVarIsNum $var_input && [[ $var_input -ge $int_min && $var_input -le $int_max ]]; then
+            if CheckIfVarIsNum $var_input && [[ $var_input -ge $var_min && $var_input -le $var_max ]]; then
                 return 0
             fi
 
@@ -537,19 +527,13 @@
         # </params>
 
         # <summary> Minimum multiple choice are two answers. </summary>
-        if CheckIfVarIsValid $2 &> /dev/null; then
-            arr_input+=( $2 )
-        else
+        if ( ! CheckIfVarIsValid $2 || ! CheckIfVarIsValid $3 ) &> /dev/null; then
             echo -e $str_output_multiple_choice_not_valid
             return 1;
         fi
 
-        if CheckIfVarIsValid $3 &> /dev/null; then
-            arr_input+=( $3 )
-        else
-            echo -e $str_output_multiple_choice_not_valid
-            return 1;
-        fi
+        arr_input+=( $2 )
+        arr_input+=( $3 )
 
         if CheckIfVarIsValid $4 &> /dev/null; then arr_input+=( $4 ); fi
         if CheckIfVarIsValid $5 &> /dev/null; then arr_input+=( $5 ); fi
@@ -608,19 +592,13 @@
         # </params>
 
         # <summary> Minimum multiple choice are two answers. </summary>
-        if CheckIfVarIsValid $2 &> /dev/null; then
-            arr_input+=( $2 )
-        else
+        if ( ! CheckIfVarIsValid $2 || ! CheckIfVarIsValid $3 ) &> /dev/null; then
             echo -e $str_output_multiple_choice_not_valid
             return 1;
         fi
 
-        if CheckIfVarIsValid $3 &> /dev/null; then
-            arr_input+=( $3 )
-        else
-            echo -e $str_output_multiple_choice_not_valid
-            return 1;
-        fi
+        arr_input+=( $2 )
+        arr_input+=( $3 )
 
         if CheckIfVarIsValid $4 &> /dev/null; then arr_input+=( $4 ); fi
         if CheckIfVarIsValid $5 &> /dev/null; then arr_input+=( $5 ); fi
@@ -658,28 +636,36 @@
     }
 # </code>
 
-### debug
-#   TODO: test each function!
-
+# # works #
 # ReadInput "Hello world."
 # echo $?
 
+# # works #
 # ReadInput
 # echo $?
 
-# var_input=""
+# # works #
 # ReadInputFromRangeOfTwoNums "Enter an 8-bit value." 0 255
 # echo $var_input
 
-# var_input=""
+# # works #
 # ReadInputFromRangeOfTwoNums "This range is not correct" "A" "B"
 # echo $var_input
 
-# var_input=""
+# # works #
 # ReadMultipleChoiceIgnoreCase "Multiple choice." 'a' 'B' 'c'
 # echo $var_input
 
+# # works #
+# ReadMultipleChoiceIgnoreCase "Incorrect Multiple choice." 'a'
+# echo $var_input
+
+# # works #
 # ReadMultipleChoiceMatchCase "Multiple choice." "a" "B" "c"
+# echo $var_input
+
+# # works #
+# ReadMultipleChoiceMatchCase "Incorrect Multiple choice." 'a'
 # echo $var_input
 
 # str="newfile.txt"
@@ -702,9 +688,9 @@
 # CheckIfCommandIsInstalled "apt"
 # CheckIfCommandIsInstalled "windows-nt"
 
-CheckLinuxDistro
+# CheckLinuxDistro      # works
 
-# CheckIfUserIsRoot   # works
+# CheckIfUserIsRoot     # works
 
 exit 0
 
