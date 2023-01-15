@@ -82,7 +82,8 @@
             return $?
         fi
 
-        if $( ! CheckIfVarIsValid $var_actual_install_path ) &> /dev/null || [[ "${var_actual_install_path}" != "${var_expected_install_path}" ]]; then
+        # if $( ! CheckIfVarIsValid $var_actual_install_path ) &> /dev/null || [[ "${var_actual_install_path}" != "${var_expected_install_path}" ]]; then
+        if $( ! CheckIfVarIsValid $var_actual_install_path ) &> /dev/null; then
             echo -e $str_output_cmd_is_null
             return $int_code_cmd_is_null
         fi
@@ -312,10 +313,17 @@
             return "$?"
         fi
 
-        ( printf "%s\n" "${var_file[@]}" >> $1 ) || (
-            echo -e $str_output_fail
-            return 1
-        )
+        # ( printf "%s\n" "${var_file[@]}" >> $1 ) || (
+            # echo -e $str_output_fail
+            # return 1
+        # )
+
+        for var_element in ${var_file[@]}; do
+            echo -e $var_element >> $1 || (
+                echo -e $str_output_fail
+                return 1
+            )
+        done
 
         return 0
     }
