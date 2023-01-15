@@ -4,39 +4,6 @@
 # Author(s):    Alex Portell <github.com/portellam>
 #
 
-# <summary> #0 - Global parameters </summary>
-# <params>
-    declare -gl str_package_manager=""
-
-    # <summary> Exit codes </summary>
-    declare -gir int_code_var_is_null=255
-    declare -gir int_code_var_is_empty=254
-    declare -gir int_code_dir_is_null=253
-    declare -gir int_code_file_is_null=252
-    declare -gir int_code_var_is_NAN=251
-    declare -gir int_code_cmd_is_null=251
-    declare -gi int_exit_code="$?"
-
-    # <summary>
-    # Color coding
-    # Reference URL: 'https://www.shellhacks.com/bash-colors'
-    # </summary>
-    declare -gr var_blinking_red='\033[0;31;5m'
-    declare -gr var_green='\033[0;32m'
-    declare -gr var_red='\033[0;31m'
-    declare -gr var_yellow='\033[0;33m'
-    declare -gr var_reset='\033[0m'
-
-    # <summary> Append output </summary>
-    declare -gr var_prefix_error="${var_yellow}Error:${var_reset}"
-    declare -gr var_prefix_fail="${var_red}Failure:${var_reset}"
-    declare -gr var_prefix_pass="${var_green}Success:${var_reset}"
-    declare -gr var_prefix_warn="${var_blinking_red}Warning:${var_reset}"
-    declare -gr var_suffix_fail="${var_red}Failure${var_reset}"
-    declare -gr var_suffix_pass="${var_green}Success${var_reset}"
-    declare -gr str_output_var_is_not_valid="${var_prefix_error} Invalid input."
-# </params>
-
 # <summary> #1 - Exit codes </summary>
 # <code>
     # <summary> Append Pass or Fail given exit code. If Fail, call SaveExitCode. </summary>
@@ -179,6 +146,20 @@
             return $int_code_file_is_null
         fi
 
+        return 0
+    }
+
+    # <summary> Parse exit code as boolean. If non-zero, return false. </summary>
+    # <returns> boolean </returns>
+    #
+    function ParseExitCodeAsBool
+    {
+        if [[ "$?" -ne 0 ]]; then
+            echo false
+            return 1
+        fi
+
+        echo true
         return 0
     }
 # </code>
@@ -667,6 +648,75 @@
         return 1
     }
 # </code>
+
+# <summary> #7 - Software installation </summary>
+# <code>
+    # <summary> Install a software package. </summary>
+    # <returns> exit code </returns>
+    function InstallPackage
+    {
+        if ! CheckIfVarIsValid $1; then
+            return 1
+        fi
+
+        if ! CheckIfVarIsValid $str_package_manager; then
+            CheckLinuxDistro
+        fi
+
+        if ! CheckIfVarIsValid $str_package_manager; then
+            return 1
+        fi
+
+        local str_commands_to_execute=""
+
+        case "${$str_package_manager}" in
+            "apt" )
+                str_commands_to_execute="apt install -y $1"
+                ;;
+
+            * )
+                return 1
+                ;;
+        esac
+
+        eval $str_commands_to_execute || return 1
+    }
+# </code>
+
+# <summary> Global parameters </summary>
+# <params>
+    # <summary> Pre-code execution checks </summary>
+    CheckIfUserIsRoot &> /dev/null; declare -g bool_is_user_root=$( ParseExitCodeAsBool )
+    declare -gl str_package_manager=""; CheckLinuxDistro &> /dev/null
+
+    # <summary> Exit codes </summary>
+    declare -gir int_code_var_is_null=255
+    declare -gir int_code_var_is_empty=254
+    declare -gir int_code_dir_is_null=253
+    declare -gir int_code_file_is_null=252
+    declare -gir int_code_var_is_NAN=251
+    declare -gir int_code_cmd_is_null=251
+    declare -gi int_exit_code="$?"
+
+    # <summary>
+    # Color coding
+    # Reference URL: 'https://www.shellhacks.com/bash-colors'
+    # </summary>
+    declare -gr var_blinking_red='\033[0;31;5m'
+    declare -gr var_green='\033[0;32m'
+    declare -gr var_red='\033[0;31m'
+    declare -gr var_yellow='\033[0;33m'
+    declare -gr var_reset='\033[0m'
+
+    # <summary> Append output </summary>
+    declare -gr var_prefix_error="${var_yellow}Error:${var_reset}"
+    declare -gr var_prefix_fail="${var_red}Failure:${var_reset}"
+    declare -gr var_prefix_pass="${var_green}Success:${var_reset}"
+    declare -gr var_prefix_warn="${var_blinking_red}Warning:${var_reset}"
+    declare -gr var_suffix_fail="${var_red}Failure${var_reset}"
+    declare -gr var_suffix_pass="${var_green}Success${var_reset}"
+    declare -gr str_output_var_is_not_valid="${var_prefix_error} Invalid input."
+# </params>
 
 #
 # YOUR CODE BELOW
