@@ -4,13 +4,18 @@
 # Author(s):    Alex Portell <github.com/portellam>
 #
 
-# <summary> #1 - Exit codes </summary>
+# <summary> #1 - Command operation validation </summary>
 # <code>
     # <summary> Append Pass or Fail given exit code. If Fail, call SaveExitCode. </summary>
+    # <param name="$1"> the output statement </param>
     # <returns> output statement </returns>
     function AppendPassOrFail
     {
-        case "$?" in
+        if CheckIfVarIsValid $1 &> /dev/null; then
+            echo -en "$1 "
+        fi
+
+        case $? in
             0)
                 echo -e $var_suffix_pass
                 return 0;;
@@ -23,12 +28,36 @@
 
     # <summary> Save last exit code. </summary>
     # <param name="$int_exit_code"> the exit code </param>
-    # <returns> void </returns>
+    # <returns> exit code </returns>
     function SaveExitCode
     {
-        int_exit_code="$?"
+        int_exit_code=$?
     }
 
+    # <summary> Attempt given command a given number of times before failure. </summary>
+    # <param name="$1"> the command to execute </param>
+    # <returns> exit code </returns>
+    function TryThisXTimesBeforeFail
+    {
+        # <params>
+        declare -i int_count=0
+        declare -ir int_max_count_of_tries=3
+        # </params>
+
+        if ! CheckIfVarIsValid $1; then
+            return $?
+        fi
+
+        while [[ $int_count -lt $int_max_count_of_tries ]]; do
+            if eval $1; then
+                return 0
+            fi
+
+            (( int_count++ ))
+        done
+
+        return 1
+    }
 # </code>
 
 # <summary> #2 - Data-type and variable validation </summary>
@@ -58,28 +87,28 @@
         return 0
     }
 
-    # <summary> Check if the value is valid. </summary>
+    # <summary> Check if the value is a valid bool. </summary>
     # <param name="$1"> the value </param>
     # <returns> exit code </returns>
     #
-    function CheckIfVarIsValid
+    function CheckIfVarIsBool
     {
         # <params>
-        local readonly str_output_var_is_null="${var_prefix_error} Null string."
-        local readonly str_output_var_is_empty="${var_prefix_error} Empty string."
+        local readonly str_output_var_is_incorrect_type="${var_prefix_error} Not a boolean."
         # </params>
 
-        if [[ -z "$1" ]]; then
-            echo -e $str_output_var_is_null
-            return $int_code_var_is_null
+        if ! CheckIfVarIsValid $1; then
+            return $?
         fi
 
-        if [[ "$1" == "" ]]; then
-            echo -e $str_output_var_is_empty
-            return $int_code_var_is_empty
-        fi
+        case $1 in
+            "true" | "false" )
+                return 0;;
 
-        return 0
+            * )
+                echo -e $str_output_var_is_incorrect_type
+                return $int_code_var_is_not_bool;;
+        esac
     }
 
     # <summary> Check if the value is a valid number. </summary>
@@ -100,6 +129,30 @@
         if ! [[ $1 =~ $str_num_regex ]]; then
             echo -e $str_output_var_is_NAN
             return $int_code_var_is_NAN
+        fi
+
+        return 0
+    }
+
+    # <summary> Check if the value is valid. </summary>
+    # <param name="$1"> the value </param>
+    # <returns> exit code </returns>
+    #
+    function CheckIfVarIsValid
+    {
+        # <params>
+        local readonly str_output_var_is_null="${var_prefix_error} Null string."
+        local readonly str_output_var_is_empty="${var_prefix_error} Empty string."
+        # </params>
+
+        if [[ -z "$1" ]]; then
+            echo -e $str_output_var_is_null
+            return $int_code_var_is_null
+        fi
+
+        if [[ "$1" == "" ]]; then
+            echo -e $str_output_var_is_empty
+            return $int_code_var_is_empty
         fi
 
         return 0
@@ -151,7 +204,6 @@
 
     # <summary> Parse exit code as boolean. If non-zero, return false. </summary>
     # <returns> boolean </returns>
-    #
     function ParseExitCodeAsBool
     {
         if [[ "$?" -ne 0 ]]; then
@@ -167,12 +219,12 @@
 # <summary> #3 - User validation </summary>
 # <code>
     # <summary> Check if current user is sudo or root. </summary>
-    # <returns> void </returns>
+    # <returns> exit code </returns>
     function CheckIfUserIsRoot
     {
         # <params>
         local readonly str_file=$( basename $0 )
-        local readonly str_output_user_is_not_root="${var_prefix_warn} User is not Sudo/Root. In terminal, enter: ${var_yellow}'sudo bash ${str_file}' ${var_reset}"
+        local readonly str_output_user_is_not_root="${var_prefix_warn} User is not Sudo/Root. In terminal, enter: ${var_yellow}'sudo bash ${str_file}' ${var_reset_color}"
         # </params>
 
         if [[ $( whoami ) != "root" ]]; then
@@ -189,7 +241,6 @@
     # <summary> Create a directory. </summary>
     # <param name="$1"> the directory </param>
     # <returns> exit code </returns>
-    #
     function CreateDir
     {
         # <params>
@@ -211,7 +262,6 @@
     # <summary> Create a file. </summary>
     # <param name="$1"> the file </param>
     # <returns> exit code </returns>
-    #
     function CreateFile
     {
         # <params>
@@ -233,7 +283,6 @@
     # <summary> Delete a dir/file. </summary>
     # <param name="$1"> the file </param>
     # <returns> exit code </returns>
-    #
     function DeleteFile
     {
         # <params>
@@ -256,7 +305,6 @@
     # <param name="$1"> the file </param>
     # <param name="$var_file"> the file contents </param>
     # <returns> exit code </returns>
-    #
     function ReadFromFile
     {
         # <params>
@@ -265,11 +313,11 @@
         # </params>
 
         if ! CheckIfFileExists $1; then
-            return "$?"
+            return $?
         fi
 
         if ! CheckIfVarIsValid ${var_file[@]}; then
-            return "$?"
+            return $?
         fi
 
         return 0
@@ -279,19 +327,19 @@
     # <param name="$1"> the file </param>
     # <param name="$var_file"> the file contents </param>
     # <returns> exit code </returns>
-    #
     function WriteToFile
     {
         # <params>
+        IFS=$'\n'
         local readonly str_output_fail="${var_prefix_fail} Could not write to file '$1'."
         # </params>
 
         if ! CheckIfFileExists $1; then
-            return "$?"
+            return $?
         fi
 
         if ! CheckIfVarIsValid $var_file; then
-            return "$?"
+            return $?
         fi
 
         # ( printf "%s\n" "${var_file[@]}" >> $1 ) || (
@@ -319,7 +367,7 @@
         # <params>
         local readonly str_kernel="$( uname -o | tr '[:upper:]' '[:lower:]' )"
         local readonly str_operating_system="$( lsb_release -is | tr '[:upper:]' '[:lower:]' )"
-        local str_package_manager=""
+        # local str_package_manager=""
         local readonly str_output_distro_is_not_valid="${var_prefix_error} Distribution '$( lsb_release -is )' is not supported."
         local readonly str_output_kernel_is_not_valid="${var_prefix_error} Kernel '$( uname -o )' is not supported."
         local readonly str_OS_with_apt="debian bodhi deepin knoppix mint peppermint pop ubuntu kubuntu lubuntu xubuntu "
@@ -391,23 +439,44 @@
     }
 
     # <summary> Test network connection to Internet. Ping DNS servers by address and name. </summary>
+    # <param name="$1"> boolean to toggle verbosity </param>
     # <returns> exit code </returns>
     function TestNetwork
     {
-        echo -en "Testing Internet connection...\t"
-        ( ping -q -c 1 8.8.8.8 || ping -q -c 1 1.1.1.1 ) &> /dev/null || false
-        AppendPassOrFail
+        # <params>
+        local bool=false
+        # </params>
 
-        echo -en "Testing connection to DNS...\t"
+        if CheckIfVarIsBool $1 &> /dev/null && $1; then
+            local bool=$1
+        fi
+
+        if $bool; then
+            echo -en "Testing Internet connection...\t"
+        fi
+
+        ( ping -q -c 1 8.8.8.8 || ping -q -c 1 1.1.1.1 ) &> /dev/null || false
+
+        if $bool; then
+            AppendPassOrFail
+            echo -en "Testing connection to DNS...\t"
+        else
+            SaveExitCode
+        fi
+
         ( ping -q -c 1 www.google.com && ping -q -c 1 www.yandex.com ) &> /dev/null || false
-        AppendPassOrFail
+
+        if $bool; then
+            AppendPassOrFail
+        else
+            SaveExitCode
+        fi
 
         if [[ $int_exit_code -ne 0 ]]; then
             echo -e "Failed to ping Internet/DNS servers. Check network settings or firewall, and try again."
-            return $int_exit_code
         fi
 
-        SaveExitCode; return 0
+        return $int_exit_code
     }
 # </code>
 
@@ -429,7 +498,7 @@
             str_output="$1 "
         fi
 
-        declare -r str_output+="${var_green}[Y/n]:${var_reset}"
+        declare -r str_output+="${var_green}[Y/n]:${var_reset_color}"
 
         while [[ $int_count -le $int_max_count ]]; do
 
@@ -490,7 +559,7 @@
             str_output="$1 "
         fi
 
-        readonly str_output+="${var_green}[${var_min}-${var_max}]:${var_reset}"
+        readonly str_output+="${var_green}[${var_min}-${var_max}]:${var_reset_color}"
 
         # <summary> Read input </summary>
         while [[ $int_count -le $int_max_count ]]; do
@@ -541,8 +610,9 @@
 
         # <summary> Minimum multiple choice are two answers. </summary>
         if ( ! CheckIfVarIsValid $2 || ! CheckIfVarIsValid $3 ) &> /dev/null; then
+            SaveExitCode
             echo -e $str_output_multiple_choice_not_valid
-            return 1;
+            return $int_exit_code
         fi
 
         arr_input+=( $2 )
@@ -559,7 +629,7 @@
             str_output="$1 "
         fi
 
-        readonly str_output+="${var_green}[${arr_input[@]}]:${var_reset}"
+        readonly str_output+="${var_green}[${arr_input[@]}]:${var_reset_color}"
 
         # <summary> Read input </summary>
         for int_count in {0..2}; do
@@ -624,7 +694,7 @@
             str_output="$1 "
         fi
 
-        readonly str_output+="${var_green}[${arr_input[@]}]:${var_reset}"
+        readonly str_output+="${var_green}[${arr_input[@]}]:${var_reset_color}"
 
         # <summary> Read input </summary>
         for int_count in {0..2}; do
@@ -651,51 +721,150 @@
 
 # <summary> #7 - Software installation </summary>
 # <code>
-    # <summary> Install a software package. </summary>
+    # <summary> Distro-agnostic, Check if package exists on-line. </summary>
     # <returns> exit code </returns>
-    function InstallPackage
+    function CheckIfPackageExists
     {
+        # <params>
+        local str_commands_to_execute=""
+        local readonly str_output="${var_prefix_fail}: Command '${str_package_manager}' is not supported."
+        # </params>
+
         if ! CheckIfVarIsValid $1; then
             return 1
         fi
 
         if ! CheckIfVarIsValid $str_package_manager; then
-            CheckLinuxDistro
+            return $?
         fi
 
-        if ! CheckIfVarIsValid $str_package_manager; then
-            return 1
-        fi
-
-        local str_commands_to_execute=""
-
-        case "${$str_package_manager}" in
+        case $str_package_manager in
             "apt" )
-                str_commands_to_execute="apt install -y $1"
+                str_commands_to_execute="apt list $1"
+                ;;
+
+            "dnf" )
+                str_commands_to_execute="dnf search $1"
+                ;;
+
+            "pacman" )
+                str_commands_to_execute="pacman -Ss $1"
+                ;;
+
+            "gentoo" )
+                str_commands_to_execute="emerge --search $1"
+                ;;
+
+            "urpmi" )
+                str_commands_to_execute="urpmq $1"
+                ;;
+
+            "yum" )
+                str_commands_to_execute="yum search $1"
+                ;;
+
+            "zypper" )
+                str_commands_to_execute="zypper se $1"
                 ;;
 
             * )
+                echo -e $str_output
                 return 1
                 ;;
         esac
 
         eval $str_commands_to_execute || return 1
     }
+
+    # <summary> Distro-agnostic, Install a software package. </summary>
+    # <returns> exit code </returns>
+    function InstallPackage
+    {
+        # <params>
+        local str_commands_to_execute=""
+        local readonly str_output="${var_prefix_fail}: Command '${str_package_manager}' is not supported."
+        # </params>
+
+        if ! CheckIfVarIsValid $1; then
+            return 1
+        fi
+
+        if ! CheckIfVarIsValid $str_package_manager; then
+            return $?
+        fi
+
+        # <summary> Auto-update and auto-install selected packages </summary>
+        case $str_package_manager in
+            "apt" )
+                str_commands_to_execute="apt update && apt full-upgrade -y && apt install -y $1"
+                ;;
+
+            "dnf" )
+                str_commands_to_execute="dnf upgrade && dnf install $1"
+                ;;
+
+            "pacman" )
+                str_commands_to_execute="pacman -Syu && pacman -S $1"
+                ;;
+
+            "gentoo" )
+                str_commands_to_execute="emerge -u @world && emerge www-client/$1"
+                ;;
+
+            "urpmi" )
+                str_commands_to_execute="urpmi --auto-update && urpmi $1"
+                ;;
+
+            "yum" )
+                str_commands_to_execute="yum update && yum install $1"
+                ;;
+
+            "zypper" )
+                str_commands_to_execute="zypper refresh && zypper in $1"
+                ;;
+
+            * )
+                echo -e $str_output
+                return 1
+                ;;
+        esac
+
+        eval $str_commands_to_execute || return 1
+    }
+
+    # <summary> Update or Clone repository given if it exists or not. </summary>
+    # <param name="$1"> the directory </param>
+    # <param name="$2"> the full repo name </param>
+    # <param name="$3"> the username </param>
+    # <returns> exit code </returns>
+    function UpdateOrCloneGitRepo
+    {
+        # <summary> Update existing GitHub repository. </summary>
+        if CheckIfDirExists "$1$2"; then
+            cd "$1$2" && TryThisXTimesBeforeFail "git pull"
+            return $?
+
+        # <summary> Clone new GitHub repository. </summary>
+        else
+            if ReadInput "Clone repo '$2'?"; then
+                cd "$1$3" && TryThisXTimesBeforeFail "git clone https://github.com/$2"
+                return $?
+            fi
+        fi
+    }
 # </code>
 
 # <summary> Global parameters </summary>
 # <params>
-    # <summary> Pre-code execution checks </summary>
-    CheckIfUserIsRoot &> /dev/null; declare -g bool_is_user_root=$( ParseExitCodeAsBool )
-    declare -gl str_package_manager=""; CheckLinuxDistro &> /dev/null
-
     # <summary> Exit codes </summary>
-    declare -gir int_code_var_is_null=255
-    declare -gir int_code_var_is_empty=254
-    declare -gir int_code_dir_is_null=253
-    declare -gir int_code_file_is_null=252
-    declare -gir int_code_var_is_NAN=251
-    declare -gir int_code_cmd_is_null=251
+    declare -gir int_code_partial_completion=255
+    declare -gir int_code_var_is_null=253
+    declare -gir int_code_var_is_empty=252
+    declare -gir int_code_var_is_not_bool=251
+    declare -gir int_code_var_is_NAN=250
+    declare -gir int_code_dir_is_null=249
+    declare -gir int_code_file_is_null=248
+    declare -gir int_code_cmd_is_null=247
     declare -gi int_exit_code="$?"
 
     # <summary>
@@ -706,15 +875,18 @@
     declare -gr var_green='\033[0;32m'
     declare -gr var_red='\033[0;31m'
     declare -gr var_yellow='\033[0;33m'
-    declare -gr var_reset='\033[0m'
+    declare -gr var_reset_color='\033[0m'
 
     # <summary> Append output </summary>
-    declare -gr var_prefix_error="${var_yellow}Error:${var_reset}"
-    declare -gr var_prefix_fail="${var_red}Failure:${var_reset}"
-    declare -gr var_prefix_pass="${var_green}Success:${var_reset}"
-    declare -gr var_prefix_warn="${var_blinking_red}Warning:${var_reset}"
-    declare -gr var_suffix_fail="${var_red}Failure${var_reset}"
-    declare -gr var_suffix_pass="${var_green}Success${var_reset}"
+    declare -gr var_prefix_error="${var_yellow}Error:${var_reset_color}"
+    declare -gr var_prefix_fail="${var_red}Failure:${var_reset_color}"
+    declare -gr var_prefix_pass="${var_green}Success:${var_reset_color}"
+    declare -gr var_prefix_warn="${var_blinking_red}Warning:${var_reset_color}"
+    declare -gr var_suffix_fail="${var_red}Failure${var_reset_color}"
+    declare -gr var_suffix_pass="${var_green}Success${var_reset_color}"
+
+    # <summary> Output statement </summary>
+    declare -gr str_output_partial_completion="${var_prefix_warn} One or more operations failed."
     declare -gr str_output_var_is_not_valid="${var_prefix_error} Invalid input."
 # </params>
 
