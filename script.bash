@@ -372,8 +372,8 @@
             declare -ir int_max_count=4
             local readonly str_dir1=$( dirname "${1}" )
             local readonly str_suffix=".old"
-            var_get_dir1='ls "${str_dir1}" | grep "${1}" | grep $str_suffix | uniq | sort -V'
-            declare -a arr_dir1=( $( eval "$var_get_dir1" ) )
+            local readonly var_command='ls "${str_dir1}" | grep "${1}" | grep $str_suffix | uniq | sort -V'
+            declare -a arr_dir1=( $( eval "${var_command}" ) )
             # </params>
 
             # <summary> Create backup file if none exist. </summary>
@@ -394,7 +394,7 @@
             # <summary> Delete older backup files, if total matches/exceeds maximum. </summary>
             while [[ "${#arr_dir1[@]}" -gt "$int_max_count" ]]; do
                 DeleteFile "${arr_dir1[0]}" || return "${?}"
-                arr_dir1=( $( eval "$var_get_dir1" ) )
+                arr_dir1=( $( eval "${var_command}" ) )
             done
 
             # <summary> Increment number of last backup file index. </summary>
@@ -508,8 +508,8 @@
             # <params>
             local readonly str_dir1=$( dirname "${1}" )
             local readonly str_suffix=".old"
-            var_get_dir1='ls "${str_dir1}" | grep "${1}" | grep $str_suffix | uniq | sort -rV'
-            declare -a arr_dir1=( $( eval "$var_get_dir1" ) )
+            var_command='ls "${str_dir1}" | grep "${1}" | grep $str_suffix | uniq | sort -rV'
+            declare -a arr_dir1=( $( eval "${var_command}" ) )
             # </params>
 
             CheckIfVarIsValid ${arr_dir1[@]} || return "${?}"
@@ -577,7 +577,6 @@
         # <params>
         local readonly str_kernel="$( uname -o | tr '[:upper:]' '[:lower:]' )"
         local readonly str_operating_system="$( lsb_release -is | tr '[:upper:]' '[:lower:]' )"
-        # local str_package_manager=""
         local readonly str_output_distro_is_not_valid="${var_prefix_error} Distribution '$( lsb_release -is )' is not supported."
         local readonly str_output_kernel_is_not_valid="${var_prefix_error} Kernel '$( uname -o )' is not supported."
         local readonly str_OS_with_apt="debian bodhi deepin knoppix mint peppermint pop ubuntu kubuntu lubuntu xubuntu "
@@ -646,7 +645,7 @@
         # </params>
 
         if CheckIfVarIsBool "${1}" &> /dev/null && "${1}"; then
-            local bool=${1}
+            local bool="${1}"
         fi
 
         if $bool; then
@@ -951,7 +950,7 @@
                 ;;
         esac
 
-        eval $str_commands_to_execute || return 1
+        eval "${str_commands_to_execute}" || return 1
     }
 
     # <summary> Distro-agnostic, Install a software package. </summary>
@@ -972,8 +971,8 @@
         # <summary> Auto-update and auto-install selected packages </summary>
         case "${str_package_manager}" in
             "apt" )
-                str_option1="--reinstall -o Dpkg::Options::=--force-confmiss"
-                str_commands_to_execute="apt update && apt full-upgrade -y && apt install ${str_option1} -y ${1}"
+                local readonly str_option="--reinstall -o Dpkg::Options::=--force-confmiss"
+                str_commands_to_execute="apt update && apt full-upgrade -y && apt install ${str_option} -y ${1}"
                 ;;
 
             "dnf" )
@@ -985,7 +984,7 @@
                 ;;
 
             "gentoo" )
-                str_commands_to_execute="emerge -u @world && emerge www-client/${1}"
+                str_commands_to_execute="emerge -u @world && emerge ${1}"
                 ;;
 
             "urpmi" )
@@ -1012,6 +1011,61 @@
         return "${int_exit_code}"
     }
 
+    # <summary> Distro-agnostic, Uninstall a software package. </summary>
+    # <param name="${1}"> string: the software package(s) </param>
+    # <returns> exit code </returns>
+    function UninstallPackage
+    {
+        ( CheckIfVarIsValid "${1}" && CheckIfVarIsValid "${str_package_manager}" )|| return "${?}"
+
+        # <params>
+        local str_commands_to_execute=""
+        local readonly str_output="Uninstalling software packages..."
+        local readonly str_output_fail="${var_prefix_fail}: Command '${str_package_manager}' is not supported."
+        # </params>
+
+        # <summary> Auto-update and auto-install selected packages </summary>
+        case "${str_package_manager}" in
+            "apt" )
+                str_commands_to_execute="apt uninstall -y ${1}"
+                ;;
+
+            "dnf" )
+                str_commands_to_execute="dnf remove ${1}"
+                ;;
+
+            "pacman" )
+                str_commands_to_execute="pacman -R ${1}"
+                ;;
+
+            "gentoo" )
+                str_commands_to_execute="emerge -Cv ${1}"
+                ;;
+
+            "urpmi" )
+                str_commands_to_execute="urpme ${1}"
+                ;;
+
+            "yum" )
+                str_commands_to_execute="yum remove ${1}"
+                ;;
+
+            "zypper" )
+                str_commands_to_execute="zypper remove ${1}"
+                ;;
+
+            * )
+                echo -e "${str_output_fail}"
+                return 1
+                ;;
+        esac
+
+        echo "${str_output}"
+        eval "${str_commands_to_execute}" &> /dev/null || ( return 1 )
+        AppendPassOrFail "${str_output}"
+        return "${int_exit_code}"
+    }
+
     # <summary> Update or Clone repository given if it exists or not. </summary>
     # <param name="${1}"> string: the directory </param>
     # <param name="${2}"> string: the full repo name </param>
@@ -1021,13 +1075,16 @@
     {
         # <summary> Update existing GitHub repository. </summary>
         if CheckIfDirExists "${1}${2}"; then
-            cd "${1}${2}" && TryThisXTimesBeforeFail "git pull"
+            local var_command="git pull"
+            cd "${1}${2}" && TryThisXTimesBeforeFail $( eval "${var_command}" )
             return "${?}"
 
         # <summary> Clone new GitHub repository. </summary>
         else
             if ReadInput "Clone repo '${2}'?"; then
-                cd "${1}${3}" && TryThisXTimesBeforeFail "git clone https://github.com/${2}"
+                local var_command="git clone https://github.com/${2}"
+
+                cd "${1}${3}" && TryThisXTimesBeforeFail $( eval "${var_command}" )
                 return "${?}"
             fi
         fi
@@ -1036,47 +1093,55 @@
 
 # <summary> Global parameters </summary>
 # <params>
-    # <summary> Misc. </summary>
-    declare -gl str_package_manager=""
+    # <summary> Getters and Setters </summary>
+        declare -g bool_is_installed_systemd=false
+        CheckIfCommandIsInstalled "systemd" &> /dev/null && bool_is_installed_systemd=true
 
-    # <summary> Exit codes </summary>
-    declare -gir int_code_partial_completion=255
-    declare -gir int_code_skipped_operation=254
-    declare -gir int_code_var_is_null=253
-    declare -gir int_code_var_is_empty=252
-    declare -gir int_code_var_is_not_bool=251
-    declare -gir int_code_var_is_NAN=250
-    declare -gir int_code_dir_is_null=249
-    declare -gir int_code_file_is_null=248
-    declare -gir int_code_file_is_not_executable=247
-    declare -gir int_code_file_is_not_writable=246
-    declare -gir int_code_file_is_not_readable=245
-    declare -gir int_code_cmd_is_null=244
-    declare -gi int_exit_code="${?}"
+        declare -g bool_is_user_root=false
+        CheckIfUserIsRoot &> /dev/null && bool_is_user_root=true
 
-    # <summary>
-    # Color coding
-    # Reference URL: 'https://www.shellhacks.com/bash-colors'
-    # </summary>
-    declare -gr var_blinking_red='\033[0;31;5m'
-    declare -gr var_green='\033[0;32m'
-    declare -gr var_red='\033[0;31m'
-    declare -gr var_yellow='\033[0;33m'
-    declare -gr var_reset_color='\033[0m'
+        declare -gl str_package_manager=""
+        CheckLinuxDistro &> /dev/null
 
-    # <summary> Append output </summary>
-    declare -gr var_prefix_error="${var_yellow}Error:${var_reset_color}"
-    declare -gr var_prefix_fail="${var_red}Failure:${var_reset_color}"
-    declare -gr var_prefix_pass="${var_green}Success:${var_reset_color}"
-    declare -gr var_prefix_warn="${var_blinking_red}Warning:${var_reset_color}"
-    declare -gr var_suffix_fail="${var_red}Failure${var_reset_color}"
-    declare -gr var_suffix_maybe="${var_yellow}Successfully Incomplete${var_reset_color}"
-    declare -gr var_suffix_pass="${var_green}Success${var_reset_color}"
-    declare -gr var_suffix_skip="${var_yellow}Skipped${var_reset_color}"
+    # <summary> Setters </summary>
+        # <summary> Exit codes </summary>
+        declare -gir int_code_partial_completion=255
+        declare -gir int_code_skipped_operation=254
+        declare -gir int_code_var_is_null=253
+        declare -gir int_code_var_is_empty=252
+        declare -gir int_code_var_is_not_bool=251
+        declare -gir int_code_var_is_NAN=250
+        declare -gir int_code_dir_is_null=249
+        declare -gir int_code_file_is_null=248
+        declare -gir int_code_file_is_not_executable=247
+        declare -gir int_code_file_is_not_writable=246
+        declare -gir int_code_file_is_not_readable=245
+        declare -gir int_code_cmd_is_null=244
+        declare -gi int_exit_code="${?}"
 
-    # <summary> Output statement </summary>
-    declare -gr str_output_partial_completion="${var_prefix_warn} One or more operations failed."
-    declare -gr str_output_var_is_not_valid="${var_prefix_error} Invalid input."
+        # <summary>
+        # Color coding
+        # Reference URL: 'https://www.shellhacks.com/bash-colors'
+        # </summary>
+        declare -gr var_blinking_red='\033[0;31;5m'
+        declare -gr var_green='\033[0;32m'
+        declare -gr var_red='\033[0;31m'
+        declare -gr var_yellow='\033[0;33m'
+        declare -gr var_reset_color='\033[0m'
+
+        # <summary> Append output </summary>
+        declare -gr var_prefix_error="${var_yellow}Error:${var_reset_color}"
+        declare -gr var_prefix_fail="${var_red}Failure:${var_reset_color}"
+        declare -gr var_prefix_pass="${var_green}Success:${var_reset_color}"
+        declare -gr var_prefix_warn="${var_blinking_red}Warning:${var_reset_color}"
+        declare -gr var_suffix_fail="${var_red}Failure${var_reset_color}"
+        declare -gr var_suffix_maybe="${var_yellow}Successfully Incomplete${var_reset_color}"
+        declare -gr var_suffix_pass="${var_green}Success${var_reset_color}"
+        declare -gr var_suffix_skip="${var_yellow}Skipped${var_reset_color}"
+
+        # <summary> Output statement </summary>
+        declare -gr str_output_partial_completion="${var_prefix_warn} One or more operations failed."
+        declare -gr str_output_var_is_not_valid="${var_prefix_error} Invalid input."
 # </params>
 
 #
