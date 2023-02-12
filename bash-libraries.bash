@@ -56,7 +56,7 @@
         function PrintPassOrFail
         {
             SaveExitCode
-            IsNotEmptyVar $1 &> /dev/null && echo -en "${1} "
+            IsString $1 &> /dev/null && echo -en "${1} "
 
             case "${int_exit_code}" in
                 0 )
@@ -108,7 +108,7 @@
         # <returns> exit code </returns>
         function StopEvalAfterThriceFail        # NEEDS WORK
         {
-            IsNotEmptyVar $1 || return $?
+            IsString $1 || return $?
 
             # <params>
             declare -ir int_min_count=1
@@ -132,25 +132,25 @@
         # <returns> exit code </returns>
         function IsNotEmptyArray
         {
-            IsNotNullVar $1 || return $?
+            IsString $1 || return $?
 
             # <params>
-            local readonly str_name_ref=$1
-            # declare -ar arr=$( "${str_name_ref[@]}" )
+            local readonly str_fail="${var_prefix_error} Empty array."
+            local readonly var_get_array='echo "${'$1'[@]}"'
             # </params>
 
-            for var_element in "${str_name_ref[@]}"; do
-                IsNotNullVar "${var_element}" &> /dev/null && return 0
+            for var_element in $( eval "${var_get_array}" ); do
+                IsString "${var_element}" &> /dev/null && return 0
             done
 
-            echo -e "${str_output_var_is_empty}"
+            echo -e "${str_fail}"
             return "${int_code_var_is_empty}"
         }
 
         # <summary> Check if the variable is not empty. If true, pass. </summary>
         # <param name=$1> var: the variable </param>
         # <returns> exit code </returns>
-        function IsNotEmptyVar
+        function IsEmptyVar
         {
             # <params>
             local readonly str_fail="${var_prefix_error} Empty string."
@@ -186,7 +186,7 @@
         # <returns> exit code </returns>
         function IsBool
         {
-            IsNotEmptyVar $1 || return $?
+            IsString $1 || return $?
 
             # <params>
             local readonly str_fail="${var_prefix_error} Not a boolean."
@@ -209,14 +209,14 @@
         # <returns> exit code </returns>
         function IsNum
         {
-            IsNotEmptyVar $1 || return $?
+            IsString $1 || return $?
 
             # <params>
-            local readonly str_num_regex='^[0-9]+$'
+            local readonly str_regex_numbers='^[0-9]+$'
             local readonly str_fail="${var_prefix_error} NaN."
             # </params>
 
-            if ! [[ $1 =~ $str_num_regex ]]; then
+            if ! [[ $1 =~ $str_regex_numbers ]]; then
                 echo -e "${str_fail}"
                 return "${int_code_var_is_NAN}"
             fi
@@ -229,8 +229,8 @@
         # <returns> exit code </returns>
         function IsString
         {
-            IsNotNullVar $1 || return $?
-            # IsNotEmptyVar $1 || return $?
+            # IsNotNullVar $1 || return $?
+            IsEmptyVar $1 || return $?
             return 0
         }
 
@@ -239,14 +239,14 @@
         # <returns> exit code </returns>
         function IsWritableVar
         {
-            IsNotEmptyVar $1 || return $?
+            IsString $1 || return $?
 
             # <params>
             local readonly str_fail="${var_prefix_error} Readonly variable."
-            local readonly var_command="unset ${1} 2> /dev/null"
+            local readonly var_is_readonly_var="unset ${1} 2> /dev/null"
             # </params>
 
-            if ! eval "${var_command}"; then
+            if ! eval "${var_is_readonly_var}"; then
                 echo -e "${str_fail}"
                 return 1
             fi
@@ -259,21 +259,19 @@
         # <returns> exit code </returns>
         function PrintArray
         {
-            IsNotEmptyVar $1 || return $?
+            IsString $1 || return $?
 
             # <params>
             IFS=$'\n'
-            local readonly str_name_ref=$1
-            declare -ar arr_output=$( "${str_name_ref[@]}" )
-            local readonly var_command='echo -e "${var_yellow}${arr_output[*]}${var_reset_color}"'
+            local readonly var_print_array='echo -e "${var_yellow}${'$1'[*]}${var_reset_color}"'
             # </params>
 
-            if ! IsNotEmptyArray "arr_output" &> /dev/null; then
+            if ! IsNotEmptyArray "$1" &> /dev/null; then
                 return 1
             fi
 
             echo
-            eval "${var_command}" || return 1
+            eval "${var_print_array}" || return 1
             return 0
         }
     # </code>
@@ -285,7 +283,7 @@
         # <returns> exit code </returns>
         function IsActiveDaemon
         {
-            IsNotEmptyVar $1 || return $?
+            IsString $1 || return $?
 
             # <params>
             local readonly str_active='active'
@@ -295,7 +293,7 @@
             local readonly str_output=$( eval "${var_command}" )
             # </params>
 
-            IsNotEmptyVar "${var_command}" || return $?
+            IsString "${var_command}" || return $?
 
             case $( eval "${var_command}" ) in
                 *"${str_failed}"* | *"${str_inactive}"* )
@@ -315,16 +313,15 @@
         # <returns> exit code </returns>
         function IsInstalledCommand
         {
-            IsNotEmptyVar $1 || return $?
+            IsString $1 || return $?
 
             # <params>
             local readonly str_fail="${var_prefix_error} Command '${1}' is not installed."
             local readonly str_actual=$( command -v $1 )
             local readonly str_expected="/usr/bin/${1}"
-            local readonly var_command='"${str_actual}" == "${str_expected}"'
             # </params>
 
-            if ! eval "${var_command}"; then
+            if [[ "${str_actual}" != "${str_expected}" ]]; then
                 echo -e "${str_fail}"
                 return "${int_code_cmd_is_null}"
             fi
@@ -337,7 +334,7 @@
         # <returns> exit code </returns>
         function IsInstalledDaemon
         {
-            IsNotEmptyVar $1 || return $?
+            IsString $1 || return $?
 
             # <params>
             local readonly str_fail="${var_prefix_error} Daemon '${1}' is not installed."
@@ -464,7 +461,7 @@
         # <returns> exit code </returns>
         function CreateDir
         {
-            IsNotEmptyVar $1 || return $?
+            IsString $1 || return $?
             FindDir $1 &> /dev/null && return 0
 
             # <params>
@@ -485,7 +482,7 @@
         # <returns> exit code </returns>
         function CreateFile
         {
-            IsNotEmptyVar $1 || return $?
+            IsString $1 || return $?
             FindFile $1 &> /dev/null && return 0
 
             # <params>
@@ -506,7 +503,7 @@
         # <returns> exit code </returns>
         function DeleteFile
         {
-            IsNotEmptyVar $1 || return $?
+            IsString $1 || return $?
             FindFile $1 &> /dev/null && return 0
 
             # <params>
@@ -527,7 +524,7 @@
         # <returns> exit code </returns>
         function FindDir
         {
-            IsNotEmptyVar $1 || return $?
+            IsString $1 || return $?
 
             # <params>
             local readonly str_fail="${var_prefix_error} Directory '${1}' does not exist."
@@ -547,7 +544,7 @@
         # <returns> exit code </returns>
         function FindFile
         {
-            IsNotEmptyVar $1 || return $?
+            IsString $1 || return $?
 
             # <params>
             local readonly str_fail="${var_prefix_error} File '${1}' does not exist."
@@ -678,7 +675,7 @@
         function ReadFile
         {
             FindFile $2 || return $?
-            IsNotEmptyVar $1 || return $?
+            IsString $1 || return $?
 
             # <params>
             IFS=$'\n'
@@ -769,7 +766,7 @@
         {
             function GetInternetStatus_PingServer
             {
-                IsNotEmptyVar $1 || return $?
+                IsString $1 || return $?
                 ping -q -c 1 $1 &> /dev/null || return 1
                 return 0
             }
