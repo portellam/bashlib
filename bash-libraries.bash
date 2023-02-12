@@ -21,7 +21,7 @@
     # <code>
         # <summary> Check if current user is sudo or root. </summary>
         # <returns> exit code </returns>
-        function CheckIfUserIsRoot
+        function IsSudoUser
         {
             # <params>
             local readonly str_file=$( basename "${0}" )
@@ -44,10 +44,10 @@
         # <param name="${int_exit_code}"> the last exit code </param>
         # <param name="${1}"> string: the output statement </param>
         # <returns> output statement </returns>
-        function AppendPassOrFail
+        function PrintPassOrFail
         {
             SaveExitCode
-            CheckIfVarIsNotEmpty "${1}" &> /dev/null && echo -en "${1} "
+            IsNotEmptyVar "${1}" &> /dev/null && echo -en "${1} "
 
             case "${int_exit_code}" in
                 0 )
@@ -110,9 +110,9 @@
         # <summary> Attempt given command a given number of times before failure. </summary>
         # <param name="${1}"> string: the command to execute </param>
         # <returns> exit code </returns>
-        function TryThisXTimesBeforeFail
+        function StopEvalAfterThriceFail
         {
-            CheckIfVarIsNotEmpty "${1}" || return "${?}"
+            IsNotEmptyVar "${1}" || return "${?}"
 
             # <params>
             declare -ir int_min_count=1
@@ -134,9 +134,9 @@
         # <summary> Check if the array is empty. </summary>
         # <paramref name="${1}"> string: name of the array </paramref>
         # <returns> exit code </returns>
-        function CheckIfArrayIsEmpty
+        function IsNotEmptyArray
         {
-            CheckIfVarIsNotNull "${1}" || return "${?}"
+            IsNotNullVar "${1}" || return "${?}"
 
             # <params>
             local readonly str_name_ref="${1}"
@@ -144,19 +144,54 @@
             # </params>
 
             for var_element in "${str_name_ref[@]}"; do
-                CheckIfVarIsNotNull "${var_element}" &> /dev/null && return 0
+                IsNotNullVar "${var_element}" &> /dev/null && return 0
             done
 
             echo -e "${str_output_var_is_empty}"
             return "${int_code_var_is_empty}"
         }
 
+        # <summary> Check if the variable is not empty. If true, pass. </summary>
+        # <param name="${1}"> var: the variable </param>
+        # <returns> exit code </returns>
+        function IsNotEmptyVar
+        {
+            # <params>
+            local readonly str_fail="${var_prefix_error} Empty string."
+            local readonly var_command='"${1}" == ""'
+            # </params>
+
+            if ! eval "${var_command}"; then
+                echo -e "${str_fail}"
+                return "${int_code_var_is_empty}"
+            fi
+
+            return 0
+        }
+
+        # <summary> Check if the variable is not null. If true, pass. </summary>
+        # <param name="${1}"> var: the variable </param>
+        # <returns> exit code </returns>
+        function IsNotNullVar
+        {
+            # <params>
+            local readonly str_fail="${var_prefix_error} Null string."
+            # </params>
+
+            if [[ -z "${1}" ]]; then
+                echo -e "${str_fail}"
+                return "${int_code_var_is_null}"
+            fi
+
+            return 0
+        }
+
         # <summary> Check if the value is a valid bool. </summary>
         # <param name="${1}"> var: the boolean </param>
         # <returns> exit code </returns>
-        function CheckIfVarIsBool
+        function IsValidBool
         {
-            CheckIfVarIsNotEmpty "${1}" || return "${?}"
+            IsNotEmptyVar "${1}" || return "${?}"
 
             # <params>
             local readonly str_fail="${var_prefix_error} Not a boolean."
@@ -177,9 +212,9 @@
         # <summary> Check if the value is a valid number. If true, pass.</summary>
         # <param name="${1}"> var: the number </param>
         # <returns> exit code </returns>
-        function CheckIfVarIsNum
+        function IsValidNum
         {
-            CheckIfVarIsNotEmpty "${1}" || return "${?}"
+            IsNotEmptyVar "${1}" || return "${?}"
 
             # <params>
             local readonly str_num_regex='^[0-9]+$'
@@ -194,58 +229,23 @@
 
             return 0
         }
-
-        # <summary> Check if the variable is not empty. If true, pass. </summary>
-        # <param name="${1}"> var: the variable </param>
-        # <returns> exit code </returns>
-        function CheckIfVarIsNotEmpty
-        {
-            # <params>
-            local readonly str_fail="${var_prefix_error} Empty string."
-            local readonly var_command='"${1}" == ""'
-            # </params>
-
-            if ! eval "${var_command}"; then
-                echo -e "${str_fail}"
-                return "${int_code_var_is_empty}"
-            fi
-
-            return 0
-        }
-        
-        # <summary> Check if the variable is not null. If true, pass. </summary>
-        # <param name="${1}"> var: the variable </param>
-        # <returns> exit code </returns>
-        function CheckIfVarIsNotNull
-        {
-            # <params>
-            local readonly str_fail="${var_prefix_error} Null string."
-            # </params>
-
-            if [[ -z "${1}" ]]; then
-                echo -e "${str_fail}"
-                return "${int_code_var_is_null}"
-            fi
-
-            return 0
-        }
-        
+       
         # <summary> Check if the variable is valid. If true, pass. </summary>
         # <param name="${1}"> var: the variable </param>
         # <returns> exit code </returns>
-        function CheckIfVarIsValid
+        function IsValidString
         {
-            CheckIfVarIsNotNull "${1}" || return "${?}"
-            CheckIfVarIsNotEmpty "${1}" || return "${?}"
+            IsNotNullVar "${1}" || return "${?}"
+            IsNotEmptyVar "${1}" || return "${?}"
             return 0
         }
         
         # <summary> Check if the variable is writable. If true, pass. </summary>
         # <param name="${1}"> string: the name of a variable </param>
         # <returns> exit code </returns>
-        function CheckIfVarIsWritable
+        function IsWritableVar
         {
-            CheckIfVarIsNotEmpty "${1}" || return "${?}"
+            IsNotEmptyVar "${1}" || return "${?}"
         
             # <params>
             local readonly var_command='"${1}+=" >2/dev/null'
@@ -258,12 +258,42 @@
 
     # <summary> #3 - Process/library validation </summary>
     # <code>
+        # <summary> Check if the daemon is active or not. </summary>
+        # <param name="${1}"> string: the command </param>
+        # <returns> exit code </returns>
+        function IsActiveDaemon
+        {
+            IsNotEmptyVar "${1}" || return "${?}"
+
+            # <params>
+            local readonly str_active='active'
+            local readonly str_failed='failed'
+            local readonly str_inactive='inactive'
+            local readonly var_command='systemctl status ${1} | grep "${str_active}"'
+            local readonly str_output=$( eval "${var_command}" )
+            # </params>
+
+            IsNotEmptyVar "${var_command}" || return "${?}"
+
+            case $( eval "${var_command}" ) in
+                *"${str_failed}"* | *"${str_inactive}"* )
+                    return "${int_code_partial_completion}"
+                    ;;
+
+                * )
+                    return 1
+                    ;;
+            esac
+
+            return 0
+        }
+
         # <summary> Check if the command is installed. </summary>
         # <param name="${1}"> string: the command </param>
         # <returns> exit code </returns>
-        function CheckIfCommandIsInstalled
+        function IsInstalledCommand
         {
-            CheckIfVarIsNotEmpty "${1}" || return "${?}"
+            IsNotEmptyVar "${1}" || return "${?}"
 
             # <params>
             local readonly str_fail="${var_prefix_error} Command '${1}' is not installed."
@@ -280,42 +310,12 @@
             return 0
         }
 
-        # <summary> Check if the daemon is active or not. </summary>
-        # <param name="${1}"> string: the command </param>
-        # <returns> exit code </returns>
-        function CheckIfDaemonIsActive
-        {
-            CheckIfVarIsNotEmpty "${1}" || return "${?}"
-
-            # <params>
-            local readonly str_active='active'
-            local readonly str_failed='failed'
-            local readonly str_inactive='inactive'
-            local readonly var_command='systemctl status ${1} | grep "${str_active}"'
-            local readonly str_output=$( eval "${var_command}" )
-            # </params>
-
-            CheckIfVarIsNotEmpty "${var_command}" || return "${?}"
-
-            case $( eval "${var_command}" ) in
-                *"${str_failed}"* | *"${str_inactive}"* )
-                    return "${int_code_partial_completion}"
-                    ;;
-
-                * )
-                    return 1
-                    ;;
-            esac
-
-            return 0
-        }
-
         # <summary> Check if the daemon is installed. </summary>
         # <param name="${1}"> string: the command </param>
         # <returns> exit code </returns>
-        function CheckIfDaemonIsInstalled
+        function IsInstalledDaemon
         {
-            CheckIfVarIsNotEmpty "${1}" || return "${?}"
+            IsNotEmptyVar "${1}" || return "${?}"
 
             # <params>
             local readonly str_fail="${var_prefix_error} Daemon '${1}' is not installed."
@@ -323,7 +323,7 @@
             local readonly str_output=$( eval "${var_command}" )
             # </params>
 
-            if ! CheckIfVarIsValidVar "${str_output}"; then
+            if ! IsValidValid "${str_output}"; then
                 echo -e "${str_fail}"
                 return "${int_code_cmd_is_null}"
             fi
@@ -334,9 +334,9 @@
         # <summary> Check if the process is active. </summary>
         # <param name="${1}"> string: the command </param>
         # <returns> exit code </returns>
-        function CheckIfProcessIsActive
+        function IsInstalledProcess
         {
-            CheckIfVarIsValidVar "${1}" || return "${?}"
+            IsValidValid "${1}" || return "${?}"
 
             # <params>
             local readonly str_fail="${var_prefix_error} Process '${1}' is not active."
@@ -344,7 +344,7 @@
             local readonly str_output=$( eval "${var_command}" )
             # </params>
 
-            if ! CheckIfVarIsValidVar "${str_output}"; then
+            if ! IsValidValid "${str_output}"; then
                 echo -e "${str_fail}"
                 return "${int_code_cmd_is_null}"
             fi
@@ -355,131 +355,14 @@
 
     # <summary> #4 - File operation and validation </summary>
     # <code>
-        # <summary> Create a file. If true, pass. </summary>
-        # <param name="${1}"> string: the file </param>
-        # <param name="${2}"> string: the line </param>
-        # <returns> exit code </returns>
-        function CheckIfFileContainsLine
-        {
-            CheckIfVarIsValidVar "${2}" || return "${?}"
-            CheckIfFileExists "${1}" || return "${?}"
-
-            # <params>
-            local readonly var_command='! -z $( grep -iF "${2}" "${1}" )'
-            # </params>
-
-            ! eval "${var_command}" || return 1
-            return 0
-        }
-
-        # <summary> Check if the directory exists. If true, pass. </summary>
-        # <param name="${1}"> string: the directory name </param>
-        # <returns> exit code </returns>
-        function CheckIfDirExists
-        {
-            CheckIfVarIsNotEmpty "${1}" || return "${?}"
-
-            # <params>
-            local readonly str_fail="${var_prefix_error} Directory '${1}' does not exist."
-            local readonly var_command='-d "${1}"'
-            # </params>
-
-            if ! eval "${var_command}"; then
-                echo -e "${str_fail}"
-                return "${int_code_dir_is_null}"
-            fi
-
-            return 0
-        }
-
-        # <summary> Check if the file exists. If true, pass. </summary>
-        # <param name="${1}"> string: the file name </param>
-        # <returns> exit code </returns>
-        function CheckIfFileExists
-        {
-            CheckIfVarIsNotEmpty "${1}" || return "${?}"
-
-            # <params>
-            local readonly str_fail="${var_prefix_error} File '${1}' does not exist."
-            local readonly var_command='-e "${1}"'
-            # </params>
-
-            if ! eval "${var_command}"; then
-                echo -e "${str_fail}"
-                return "${int_code_dir_is_null}"
-            fi
-
-            return 0
-        }
-
-        # <summary> Check if the file is executable. If true, pass. </summary>
-        # <param name="${1}"> string: the file name </param>
-        # <returns> exit code </returns>
-        function CheckIfFileIsExecutable
-        {
-            CheckIfFileExists "${1}" || return "${?}"
-
-            # <params>
-            local readonly str_fail="${var_prefix_error} File '${1}' is not executable."
-            local readonly var_command='-x "${1}"'
-            # </params>
-
-            if ! eval "${var_command}"; then
-                echo -e "${str_fail}"
-                return "${int_code_file_is_not_executable}"
-            fi
-
-            return 0
-        }
-
-        # <summary> Check if the file is readable. If true, pass. </summary>
-        # <param name="${1}"> string: the file name </param>
-        # <returns> exit code </returns>
-        function CheckIfFileIsReadable
-        {
-            CheckIfFileExists "${1}" || return "${?}"
-
-            # <params>
-            local readonly str_fail="${var_prefix_error} File '${1}' is not readable."
-            local readonly var_command='-r "${1}"'
-            # </params>
-
-            if ! eval "${var_command}"; then
-                echo -e "${str_fail}"
-                return "${int_code_file_is_not_readable}"
-            fi
-
-            return 0
-        }
-
-        # <summary> Check if the file is writable. If true, pass. </summary>
-        # <param name="${1}"> string: the file name </param>
-        # <returns> exit code </returns>
-        function CheckIfFileIsWritable
-        {
-            CheckIfFileExists "${1}" || return "${?}"
-
-            # <params>
-            local readonly str_fail="${var_prefix_error} File '${1}' is not writable."
-            local readonly var_command='-w "${1}"'
-            # </params>
-
-            if ! eval "${var_command}"; then
-                echo -e "${str_fail}"
-                return "${int_code_file_is_not_writable}"
-            fi
-
-            return 0
-        }
-        
         # <summary> Check if two given files are the same. If true, pass. </summary>
         # <parameter name="${1}"> string: the file </parameter>
         # <parameter name="${2}"> string: the other file </parameter>
         # <returns> exit code </returns>
-        function CheckIfTwoFilesAreSame
+        function AreEqualFiles
         {
-            CheckIfFileExists "${2}" || return "${?}"
-            CheckIfFileExists "${1}" || return "${?}"
+            FindFile "${2}" || return "${?}"
+            FindFile "${1}" || return "${?}"
 
             # <params>
             local readonly var_command='cmp -s "${1}" "${2}"'
@@ -492,11 +375,11 @@
         # <summary> Create latest backup of given file (do not exceed given maximum count). </summary>
         # <parameter name="${1}"> string: the file </parameter>
         # <returns> exit code </returns>
-        function CreateBackupFile
+        function BackupFile
         {
-            function CreateBackupFile_Main
+            function BackupFile_Main
             {
-                CheckIfFileExists "${1}" || return "${?}"
+                FindFile "${1}" || return "${?}"
 
                 # <params>
                 declare -ir int_max_count=4
@@ -506,7 +389,7 @@
                 declare -a arr_dir=( $( eval "${var_command}" ) )
                 # </params>
 
-                CheckIfArrayIsEmpty "arr_dir" &> /dev/null || return "${?}"
+                IsNotEmptyArray "arr_dir" &> /dev/null || return "${?}"
 
                 # <remarks> Create backup file if none exist. </remarks>
                 if [[ "${#arr_dir[@]}" -eq 0 ]]; then
@@ -515,13 +398,13 @@
                 fi
 
                 # <remarks> Oldest backup file is same as original file. </remarks>
-                CheckIfTwoFilesAreSame "${1}" "${arr_dir[0]}" && return 0
+                AreEqualFiles "${1}" "${arr_dir[0]}" && return 0
 
                 # <remarks> Get index of oldest backup file. </remarks>
                 local str_oldest_file="${arr_dir[0]}"
                 str_oldest_file="${str_oldest_file%%"${str_suffix}"*}"
                 local var_first_index="${str_oldest_file##*.}"
-                CheckIfVarIsNum "$var_first_index" || return "${?}"
+                IsValidNum "$var_first_index" || return "${?}"
 
                 # <remarks> Delete older backup files, if total matches/exceeds maximum. </remarks>
                 while [[ "${#arr_dir[@]}" -gt "$int_max_count" ]]; do
@@ -533,11 +416,11 @@
                 local str_newest_file="${arr_dir[-1]}"
                 str_newest_file="${str_newest_file%%"${str_suffix}"*}"
                 local var_last_index="${str_newest_file##*.}"
-                CheckIfVarIsNum "${var_last_index}" || return "${?}"
+                IsValidNum "${var_last_index}" || return "${?}"
                 (( var_last_index++ ))
 
                 # <remarks> Newest backup file is different and newer than original file. </remarks>
-                if ( ! CheckIfTwoFilesAreSame "${1}" "${arr_dir[-1]}" &> /dev/null ) && [[ "${1}" -nt "${arr_dir[-1]}" ]]; then
+                if ( ! AreEqualFiles "${1}" "${arr_dir[-1]}" &> /dev/null ) && [[ "${1}" -nt "${arr_dir[-1]}" ]]; then
                     cp "${1}" "${1}.${var_last_index}${str_suffix}" || return 1
                 fi
 
@@ -549,8 +432,8 @@
             # </params>
 
             echo -e "${str_output}"
-            CreateBackupFile_Main "${1}"
-            AppendPassOrFail "${str_output}"
+            BackupFile_Main "${1}"
+            PrintPassOrFail "${str_output}"
             return "${?}"
         }
 
@@ -559,8 +442,8 @@
         # <returns> exit code </returns>
         function CreateDir
         {
-            CheckIfVarIsNotEmpty "${1}" || return "${?}"
-            CheckIfDirExists "${1}" &> /dev/null && return 0
+            IsNotEmptyVar "${1}" || return "${?}"
+            FindDir "${1}" &> /dev/null && return 0
 
             # <params>
             local readonly str_fail="${var_prefix_fail} Could not create directory '${1}'."
@@ -580,8 +463,8 @@
         # <returns> exit code </returns>
         function CreateFile
         {
-            CheckIfVarIsNotEmpty "${1}" || return "${?}"
-            CheckIfFileExists "${1}" &> /dev/null && return 0
+            IsNotEmptyVar "${1}" || return "${?}"
+            FindFile "${1}" &> /dev/null && return 0
 
             # <params>
             local readonly str_fail="${var_prefix_fail} Could not create file '${1}'."
@@ -601,8 +484,8 @@
         # <returns> exit code </returns>
         function DeleteFile
         {
-            CheckIfVarIsNotEmpty "${1}" || return "${?}"
-            CheckIfFileExists "${1}" &> /dev/null && return 0
+            IsNotEmptyVar "${1}" || return "${?}"
+            FindFile "${1}" &> /dev/null && return 0
 
             # <params>
             local readonly str_fail="${var_prefix_fail} Could not delete file '${1}'."
@@ -616,14 +499,131 @@
 
             return 0
         }
-        
+
+        # <summary> Create a file. If true, pass. </summary>
+        # <param name="${1}"> string: the file </param>
+        # <param name="${2}"> string: the line </param>
+        # <returns> exit code </returns>
+        function FindLine
+        {
+            IsValidValid "${2}" || return "${?}"
+            FindFile "${1}" || return "${?}"
+
+            # <params>
+            local readonly var_command='! -z $( grep -iF "${2}" "${1}" )'
+            # </params>
+
+            ! eval "${var_command}" || return 1
+            return 0
+        }
+
+        # <summary> Check if the directory exists. If true, pass. </summary>
+        # <param name="${1}"> string: the directory name </param>
+        # <returns> exit code </returns>
+        function FindDir
+        {
+            IsNotEmptyVar "${1}" || return "${?}"
+
+            # <params>
+            local readonly str_fail="${var_prefix_error} Directory '${1}' does not exist."
+            local readonly var_command='-d "${1}"'
+            # </params>
+
+            if ! eval "${var_command}"; then
+                echo -e "${str_fail}"
+                return "${int_code_dir_is_null}"
+            fi
+
+            return 0
+        }
+
+        # <summary> Check if the file exists. If true, pass. </summary>
+        # <param name="${1}"> string: the file name </param>
+        # <returns> exit code </returns>
+        function FindFile
+        {
+            IsNotEmptyVar "${1}" || return "${?}"
+
+            # <params>
+            local readonly str_fail="${var_prefix_error} File '${1}' does not exist."
+            local readonly var_command='-e "${1}"'
+            # </params>
+
+            if ! eval "${var_command}"; then
+                echo -e "${str_fail}"
+                return "${int_code_dir_is_null}"
+            fi
+
+            return 0
+        }
+
+        # <summary> Check if the file is executable. If true, pass. </summary>
+        # <param name="${1}"> string: the file name </param>
+        # <returns> exit code </returns>
+        function IsExecutableFile
+        {
+            FindFile "${1}" || return "${?}"
+
+            # <params>
+            local readonly str_fail="${var_prefix_error} File '${1}' is not executable."
+            local readonly var_command='-x "${1}"'
+            # </params>
+
+            if ! eval "${var_command}"; then
+                echo -e "${str_fail}"
+                return "${int_code_file_is_not_executable}"
+            fi
+
+            return 0
+        }
+
+        # <summary> Check if the file is readable. If true, pass. </summary>
+        # <param name="${1}"> string: the file name </param>
+        # <returns> exit code </returns>
+        function IsReadableFile
+        {
+            FindFile "${1}" || return "${?}"
+
+            # <params>
+            local readonly str_fail="${var_prefix_error} File '${1}' is not readable."
+            local readonly var_command='-r "${1}"'
+            # </params>
+
+            if ! eval "${var_command}"; then
+                echo -e "${str_fail}"
+                return "${int_code_file_is_not_readable}"
+            fi
+
+            return 0
+        }
+
+        # <summary> Check if the file is writable. If true, pass. </summary>
+        # <param name="${1}"> string: the file name </param>
+        # <returns> exit code </returns>
+        function IsWritableFile
+        {
+            FindFile "${1}" || return "${?}"
+
+            # <params>
+            local readonly str_fail="${var_prefix_error} File '${1}' is not writable."
+            local readonly var_command='-w "${1}"'
+            # </params>
+
+            if ! eval "${var_command}"; then
+                echo -e "${str_fail}"
+                return "${int_code_file_is_not_writable}"
+            fi
+
+            return 0
+        }
+                
         # <summary> Overwrite output to a file. Declare inherited params before calling this function. </summary>
         # <paramref name="${1}"> string: the name of the array </paramref>
         # <param name="${2}"> string: the name of the file </param>
         # <returns> exit code </returns>
         function OverwriteFile
         {
-            CheckIfArrayIsEmpty "${1}" || return "${?}"
+            IsNotEmptyArray "${1}" || return "${?}"
             DeleteFile "${2}"
             CreateFile "${2}" || return "${?}"
             WriteFile "${1}" "${2}"
@@ -635,7 +635,7 @@
         # <returns> exit code </returns>
         function PrintFile
         {
-            CheckIfFileExists "${1}" || return "${?}"
+            FindFile "${1}" || return "${?}"
 
             # <params>
             declare -a arr_print_file=()
@@ -654,7 +654,7 @@
         # <returns> exit code </returns>
         function PrintArray
         {
-            CheckIfVarIsNotEmpty "${1}" || return "${?}"
+            IsNotEmptyVar "${1}" || return "${?}"
 
             # <params>
             IFS=$'\n'
@@ -663,7 +663,7 @@
             local readonly var_command='echo -e "${var_yellow}${arr_output[*]}${var_reset_color}"'
             # </params>
 
-            if ! CheckIfArrayIsEmpty "arr_output" &> /dev/null; then
+            if ! IsNotEmptyArray "arr_output" &> /dev/null; then
                 return 1
             fi
 
@@ -678,8 +678,8 @@
         # <returns> exit code </returns>
         function ReadFile
         {
-            CheckIfFileExists "${2}" || return "${?}"
-            CheckIfVarIsNotEmpty "${1}" || return "${?}"
+            FindFile "${2}" || return "${?}"
+            IsNotEmptyVar "${1}" || return "${?}"
             
             # <params>
             IFS=$'\n'
@@ -689,7 +689,7 @@
             declare -a arr_read_file=( $( eval "${var_get_file}" ) )
             # </params>
 
-            if ! CheckIfArrayIsEmpty "arr_read_file" &> /dev/null; then
+            if ! IsNotEmptyArray "arr_read_file" &> /dev/null; then
                 echo -e "${str_fail}"
                 return 1
             fi
@@ -701,11 +701,11 @@
         # <summary> Restore latest valid backup of given file. </summary>
         # <parameter name="${1}"> string: the name of the file </param>
         # <returns> exit code </returns>
-        function RestoreBackupFile
+        function RestoreFile
         {
-            function RestoreBackupFile_Main
+            function RestoreFile_Main
             {
-                CheckIfFileExists "${1}" || return "${?}"
+                FindFile "${1}" || return "${?}"
 
                 # <params>
                 local bool=false
@@ -715,10 +715,10 @@
                 declare -a arr_dir=( $( eval "${var_command}" ) )
                 # </params>
 
-                CheckIfArrayIsEmpty "arr_dir" || return "${?}"
+                IsNotEmptyArray "arr_dir" || return "${?}"
 
                 for var_element in "${arr_dir[@]}"; do
-                    CheckIfFileExists "${var_element}" && cp "${var_element}" "${1}" && return 0
+                    FindFile "${var_element}" && cp "${var_element}" "${1}" && return 0
                 done
 
                 return 1
@@ -729,8 +729,8 @@
             # </params>
 
             echo -e "${str_output}"
-            RestoreBackupFile_Main "${1}"
-            AppendPassOrFail "${str_output}"
+            RestoreFile_Main "${1}"
+            PrintPassOrFail "${str_output}"
 
             return "${int_exit_code}"
         }
@@ -741,8 +741,8 @@
         # <returns> exit code </returns>
         function WriteFile
         {
-            CheckIfFileExists "${2}" || return "${?}"
-            CheckIfArrayIsEmpty "${1}" || return "${?}"
+            FindFile "${2}" || return "${?}"
+            IsNotEmptyArray "${1}" || return "${?}"
             
             # <params>
             local readonly str_fail="${var_prefix_fail} Could not write to file '${1}'."
@@ -763,6 +763,60 @@
 
     # <summary> #5 - Device validation </summary>
     # <code>
+        # <summary> Test network connection to Internet. Ping DNS servers by address and name. </summary>
+        # <param name="${1}"> boolean: true/false toggle verbosity </param>
+        # <returns> exit code </returns>
+        function GetInternetStatus
+        {
+            function GetInternetStatus_PingServer
+            {
+                IsNotEmptyVar "${1}" || return "${?}"
+                ping -q -c 1 "${1}" &> /dev/null || return 1
+                return 0
+            }
+            
+            # <params>
+            local bool=false
+            # </params>
+
+            if IsValidBool "${1}" &> /dev/null && "${1}"; then
+                bool="${1}"
+            fi
+
+            if $bool; then
+                echo -en "Testing Internet connection...\t"
+            fi
+
+            if ! GetInternetStatus_PingServer "8.8.8.8" || ! GetInternetStatus_PingServer "1.1.1.1"; then
+                false
+            fi
+
+            SaveExitCode
+
+            if $bool; then
+                ( return "${int_exit_code}" )
+                PrintPassOrFail
+                echo -en "Testing connection to DNS...\t"
+            fi
+
+            if ! GetInternetStatus_PingServer "www.google.com" || ! GetInternetStatus_PingServer "www.yandex.com"; then
+                false
+            fi
+
+            SaveExitCode
+
+            if $bool; then
+                ( return "${int_exit_code}" )
+                PrintPassOrFail
+            fi
+
+            if [[ "${int_exit_code}" -ne 0 ]]; then
+                echo -e "Failed to ping Internet/DNS servers. Check network settings or firewall, and try again."
+            fi
+
+            return "${int_exit_code}"
+        }
+
         # <summary> Check if current kernel and distro are supported, and if the expected Package Manager is installed. </summary>
         # <returns> exit code </returns>
         function GetLinuxDistro
@@ -780,7 +834,7 @@
             local readonly str_OS_with_zypper="mandriva mageia"
             # </params>
             
-            if ! CheckIfVarIsValidVar "${str_kernel}" &> /dev/null || ! CheckIfVarIsValidVar "${str_operating_system}" &> /dev/null; then
+            if ! IsValidValid "${str_kernel}" &> /dev/null || ! IsValidValid "${str_operating_system}" &> /dev/null; then
                 return "${?}"
             fi
 
@@ -798,7 +852,7 @@
 
                 elif [[ "${str_OS_with_dnf_yum}" =~ .*"${str_operating_system}".* ]]; then
                     str_package_manager="dnf"
-                    CheckIfCommandIsInstalled "${str_package_manager}" &> /dev/null && return 0
+                    IsInstalledCommand "${str_package_manager}" &> /dev/null && return 0
                     str_package_manager="yum"
 
                 elif [[ "${str_OS_with_pacman}" =~ .*"${str_operating_system}".* ]]; then
@@ -818,7 +872,7 @@
                     return 1
                 fi
 
-                CheckIfCommandIsInstalled "${str_package_manager}" &> /dev/null && return 0
+                IsInstalledCommand "${str_package_manager}" &> /dev/null && return 0
                 return 1
             }
 
@@ -830,66 +884,12 @@
             return 0
         }
 
-        # <summary> Test network connection to Internet. Ping DNS servers by address and name. </summary>
-        # <param name="${1}"> boolean: true/false toggle verbosity </param>
-        # <returns> exit code </returns>
-        function GetInternetStatus
-        {
-            function GetInternetStatus_PingServer
-            {
-                CheckIfVarIsNotEmpty "${1}" || return "${?}"
-                ping -q -c 1 "${1}" &> /dev/null || return 1
-                return 0
-            }
-            
-            # <params>
-            local bool=false
-            # </params>
-
-            if CheckIfVarIsBool "${1}" &> /dev/null && "${1}"; then
-                bool="${1}"
-            fi
-
-            if $bool; then
-                echo -en "Testing Internet connection...\t"
-            fi
-
-            if ! GetInternetStatus_PingServer "8.8.8.8" || ! GetInternetStatus_PingServer "1.1.1.1"; then
-                false
-            fi
-
-            SaveExitCode
-
-            if $bool; then
-                ( return "${int_exit_code}" )
-                AppendPassOrFail
-                echo -en "Testing connection to DNS...\t"
-            fi
-
-            if ! GetInternetStatus_PingServer "www.google.com" || ! GetInternetStatus_PingServer "www.yandex.com"; then
-                false
-            fi
-
-            SaveExitCode
-
-            if $bool; then
-                ( return "${int_exit_code}" )
-                AppendPassOrFail
-            fi
-
-            if [[ "${int_exit_code}" -ne 0 ]]; then
-                echo -e "Failed to ping Internet/DNS servers. Check network settings or firewall, and try again."
-            fi
-
-            return "${int_exit_code}"
-        }
-
         # <summary> Update GetInternetStatus </summary>
         # <param name="${bool_is_connected_to_Internet}"> boolean: network status </param>
         # <returns> exit code </returns>
         function SetInternetStatus
         {
-            ( TryThisXTimesBeforeFail "GetInternetStatus true" && bool_is_connected_to_Internet=true ) || bool_is_connected_to_Internet=false
+            ( StopEvalAfterThriceFail "GetInternetStatus true" && bool_is_connected_to_Internet=true ) || bool_is_connected_to_Internet=false
         }
     # </code>
 
@@ -908,7 +908,7 @@
             local str_output=""
             # </params>
 
-            CheckIfVarIsValidVar "${1}" &> /dev/null && str_output="${1} "
+            IsValidValid "${1}" &> /dev/null && str_output="${1} "
             str_output+="${var_green}[Y/n]:${var_reset_color}"
 
             for int_count in ${arr_count[@]}; do
@@ -919,7 +919,7 @@
                 var_input=$( echo $var_input | tr '[:lower:]' '[:upper:]' )
 
                 # <summary> Check if input is valid. </summary>
-                if CheckIfVarIsValidVar $var_input; then
+                if IsValidValid $var_input; then
                     case $var_input in
                         ""${str_yes}"" )
                             return 0;;
@@ -959,12 +959,12 @@
             var_input=""
             # </params>
 
-            if ( ! CheckIfVarIsNum $var_min || ! CheckIfVarIsNum $var_max ) &> /dev/null; then
+            if ( ! IsValidNum $var_min || ! IsValidNum $var_max ) &> /dev/null; then
                 echo -e "${str_output}"_extrema_are_not_valid
                 return 1
             fi
 
-            CheckIfVarIsValidVar "${1}" &> /dev/null && str_output="${1} "
+            IsValidValid "${1}" &> /dev/null && str_output="${1} "
 
             str_output+="${var_green}[${var_min}-${var_max}]:${var_reset_color}"
 
@@ -975,7 +975,7 @@
                 read var_input
 
                 # <summary> Check if input is valid. </summary>
-                if CheckIfVarIsNum $var_input && [[ $var_input -ge $var_min && $var_input -le $var_max ]]; then
+                if IsValidNum $var_input && [[ $var_input -ge $var_min && $var_input -le $var_max ]]; then
                     return 0
                 fi
 
@@ -1009,7 +1009,7 @@
             # </params>
 
             # <summary> Minimum multiple choice are two answers. </summary>
-            if ( ! CheckIfVarIsValidVar "${2}" || ! CheckIfVarIsValidVar "${3}" ) &> /dev/null; then
+            if ( ! IsValidValid "${2}" || ! IsValidValid "${3}" ) &> /dev/null; then
                 SaveExitCode
                 echo -e "${str_fail}"
                 return "${int_exit_code}"
@@ -1018,21 +1018,21 @@
             arr_input+=( "${2}" )
             arr_input+=( "${3}" )
 
-            if CheckIfVarIsValidVar "${4}" &> /dev/null; then arr_input+=( "${4}" ); fi
-            if CheckIfVarIsValidVar "${5}" &> /dev/null; then arr_input+=( "${5}" ); fi
-            if CheckIfVarIsValidVar "${6}" &> /dev/null; then arr_input+=( "${6}" ); fi
-            if CheckIfVarIsValidVar "${7}" &> /dev/null; then arr_input+=( "${7}" ); fi
-            if CheckIfVarIsValidVar "${8}" &> /dev/null; then arr_input+=( "${8}" ); fi
-            if CheckIfVarIsValidVar "${9}" &> /dev/null; then arr_input+=( "${9}" ); fi
+            if IsValidValid "${4}" &> /dev/null; then arr_input+=( "${4}" ); fi
+            if IsValidValid "${5}" &> /dev/null; then arr_input+=( "${5}" ); fi
+            if IsValidValid "${6}" &> /dev/null; then arr_input+=( "${6}" ); fi
+            if IsValidValid "${7}" &> /dev/null; then arr_input+=( "${7}" ); fi
+            if IsValidValid "${8}" &> /dev/null; then arr_input+=( "${8}" ); fi
+            if IsValidValid "${9}" &> /dev/null; then arr_input+=( "${9}" ); fi
 
-            CheckIfVarIsValidVar "${1}" &> /dev/null && str_output="${1} "
+            IsValidValid "${1}" &> /dev/null && str_output="${1} "
             str_output+="${var_green}[${arr_input[@]}]:${var_reset_color}"
 
             for int_count in ${arr_count[@]}; do
                 echo -en "${str_output} "
                 read var_input
 
-                if CheckIfVarIsValidVar $var_input; then
+                if IsValidValid $var_input; then
                     var_input=$( echo $var_input | tr '[:lower:]' '[:upper:]' )
 
                     for var_element in ${arr_input[@]}; do
@@ -1073,7 +1073,7 @@
             # </params>
 
             # <summary> Minimum multiple choice are two answers. </summary>
-            if ( ! CheckIfVarIsValidVar "${2}" || ! CheckIfVarIsValidVar "${3}" ) &> /dev/null; then
+            if ( ! IsValidValid "${2}" || ! IsValidValid "${3}" ) &> /dev/null; then
                 echo -e "${str_fail}"
                 return 1;
             fi
@@ -1081,21 +1081,21 @@
             arr_input+=( "${2}" )
             arr_input+=( "${3}" )
 
-            if CheckIfVarIsValidVar "${4}" &> /dev/null; then arr_input+=( "${4}" ); fi
-            if CheckIfVarIsValidVar "${5}" &> /dev/null; then arr_input+=( "${5}" ); fi
-            if CheckIfVarIsValidVar "${6}" &> /dev/null; then arr_input+=( "${6}" ); fi
-            if CheckIfVarIsValidVar "${7}" &> /dev/null; then arr_input+=( "${7}" ); fi
-            if CheckIfVarIsValidVar "${8}" &> /dev/null; then arr_input+=( "${8}" ); fi
-            if CheckIfVarIsValidVar "${9}" &> /dev/null; then arr_input+=( "${9}" ); fi
+            if IsValidValid "${4}" &> /dev/null; then arr_input+=( "${4}" ); fi
+            if IsValidValid "${5}" &> /dev/null; then arr_input+=( "${5}" ); fi
+            if IsValidValid "${6}" &> /dev/null; then arr_input+=( "${6}" ); fi
+            if IsValidValid "${7}" &> /dev/null; then arr_input+=( "${7}" ); fi
+            if IsValidValid "${8}" &> /dev/null; then arr_input+=( "${8}" ); fi
+            if IsValidValid "${9}" &> /dev/null; then arr_input+=( "${9}" ); fi
 
-            CheckIfVarIsValidVar "${1}" &> /dev/null && str_output="${1} "
+            IsValidValid "${1}" &> /dev/null && str_output="${1} "
             str_output+="${var_green}[${arr_input[@]}]:${var_reset_color}"
 
             for int_count in ${arr_count[@]}; do
                 echo -en "${str_output} "
                 read var_input
 
-                if CheckIfVarIsValidVar $var_input &> /dev/null; then
+                if IsValidValid $var_input &> /dev/null; then
                     for var_element in ${arr_input[@]}; do
                         if [[ "${var_input}" == "${var_element}" ]]; then
                             var_input=$var_element
@@ -1119,9 +1119,9 @@
         # <summary> Distro-agnostic, Check if package exists on-line. </summary>
         # <param name="${1}"> string: the software package(s) </param>
         # <returns> exit code </returns>
-        function CheckIfPackageExists
+        function FindPackage
         {
-            ( CheckIfVarIsValidVar "${1}" && CheckIfVarIsValidVar "${str_package_manager}" )|| return "${?}"
+            ( IsValidValid "${1}" && IsValidValid "${str_package_manager}" )|| return "${?}"
 
             # <params>
             local str_commands_to_execute=""
@@ -1177,10 +1177,10 @@
         # <parameter name="${2}"> string: the software package(s) to install </parameter>
         # <parameter name="${bool_is_connected_to_Internet}"> boolean: GetInternetStatus </parameter>
         # <returns> exit code </returns>
-        function CheckIfSystemFileIsOriginal
+        function IsFileOriginal
         {
-            CheckIfVarIsValidVar "${2}" || return "${?}"
-            CheckIfVarIsValidVar "${1}" || return "${?}"
+            IsValidValid "${2}" || return "${?}"
+            IsValidValid "${1}" || return "${?}"
 
             # <params>
             local bool_backup_file_exists=false
@@ -1189,15 +1189,15 @@
             # </params>
 
             # <summary> Original system file does not exist. </summary>
-            if $bool_is_connected_to_Internet && ! CheckIfFileExists "${1}"; then
+            if $bool_is_connected_to_Internet && ! FindFile "${1}"; then
                 InstallPackage "${2}" true && bool_system_file_is_original=true
             fi
 
-            # if CreateBackupFile "${1}"; then                                      # CreateBackupFile is broken?
+            # if BackupFile "${1}"; then                                      # BackupFile is broken?
             #     bool_backup_file_exists=true
             # fi
 
-            if cp "${1}" "${str_backup_file}" && CheckIfFileExists "${1}"; then
+            if cp "${1}" "${str_backup_file}" && FindFile "${1}"; then
                 bool_backup_file_exists=true
             else
                 return 1
@@ -1211,7 +1211,7 @@
 
             # <summary> System file *is not* original. Attempt to restore backup. </summary>
             if $bool_backup_file_exists && ! $bool_system_file_is_original; then
-                # RestoreBackupFile "${1}"                                          # RestoreBackupFile is broken?
+                # RestoreFile "${1}"                                          # RestoreFile is broken?
                 cp "${str_backup_file}" "${1}" || return 1
             fi
 
@@ -1234,8 +1234,8 @@
         # <returns> exit code </returns>
         function InstallPackage
         {
-            CheckIfVarIsValidVar "${str_package_manager}" || return "${?}"
-            CheckIfVarIsValidVar "${1}" || return "${?}"
+            IsValidValid "${str_package_manager}" || return "${?}"
+            IsValidValid "${1}" || return "${?}"
 
             # <params>
             local bool_option_reinstall=false
@@ -1244,7 +1244,7 @@
             local readonly str_fail="${var_prefix_fail}: Command '${str_package_manager}' is not supported."
             # </params>
 
-            CheckIfVarIsBool "${2}" &> /dev/null && bool_option_reinstall=true
+            IsValidBool "${2}" &> /dev/null && bool_option_reinstall=true
 
             # <summary> Auto-update and auto-install selected packages </summary>
             case "${str_package_manager}" in
@@ -1285,7 +1285,7 @@
 
             echo "${str_output}"
             eval "${str_commands_to_execute}" || ( return 1 )
-            AppendPassOrFail "${str_output}"
+            PrintPassOrFail "${str_output}"
             return "${?}"
         }
 
@@ -1295,8 +1295,8 @@
         # <returns> exit code </returns>
         function UninstallPackage
         {
-            CheckIfVarIsValidVar "${str_package_manager}" || return "${?}"
-            CheckIfVarIsValidVar "${1}" || return "${?}"
+            IsValidValid "${str_package_manager}" || return "${?}"
+            IsValidValid "${1}" || return "${?}"
 
             # <params>
             local str_commands_to_execute=""
@@ -1342,7 +1342,7 @@
 
             echo "${str_output}"
             eval "${str_commands_to_execute}" &> /dev/null || ( return 1 )
-            AppendPassOrFail "${str_output}"
+            PrintPassOrFail "${str_output}"
             return "${?}"
         }
 
@@ -1356,18 +1356,18 @@
             CreateDir "${1}${3}"
 
             # <summary> Update existing GitHub repository. </summary>
-            if CheckIfDirExists "${1}${2}" &> /dev/null; then
+            if FindDir "${1}${2}" &> /dev/null; then
                 local readonly var_command="git pull"
 
-                cd "${1}${2}" && TryThisXTimesBeforeFail $( eval "${var_command}" ) &> /dev/null
+                cd "${1}${2}" && StopEvalAfterThriceFail $( eval "${var_command}" ) &> /dev/null
                 return "${?}"
 
             # <summary> Clone new GitHub repository. </summary>
-            elif CheckIfDirExists "${1}${3}" &> /dev/null; then
+            elif FindDir "${1}${3}" &> /dev/null; then
                 if ReadInput "Clone repo '${2}'?"; then
                     local readonly var_command="git clone https://github.com/${2}"
 
-                    cd "${1}${3}" && TryThisXTimesBeforeFail $( eval "${var_command}" ) &> /dev/null
+                    cd "${1}${3}" && StopEvalAfterThriceFail $( eval "${var_command}" ) &> /dev/null
                     return "${?}"
                 fi
             else
@@ -1380,10 +1380,10 @@
     # <params>
         # <summary> Getters and Setters </summary>
             declare -g bool_is_installed_systemd=false
-            CheckIfCommandIsInstalled "systemd" &> /dev/null && bool_is_installed_systemd=true
+            IsInstalledCommand "systemd" &> /dev/null && bool_is_installed_systemd=true
 
             # declare -g bool_is_user_root=false
-            # CheckIfUserIsRoot &> /dev/null && bool_is_user_root=true
+            # IsSudoUser &> /dev/null && bool_is_user_root=true
 
             declare -gl str_package_manager=""
             GetLinuxDistro &> /dev/null
@@ -1431,7 +1431,6 @@
             declare -gr str_output_please_wait="The following operation may take a moment. ${var_blinking_yellow}Please wait.${var_reset_color}"
             declare -gr str_output_var_is_not_valid="${var_prefix_error} Invalid input."
     # </params>
-
 
 # =========================================================================================== #
 
