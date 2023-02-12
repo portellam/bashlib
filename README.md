@@ -1,6 +1,14 @@
 ## Description
 Collection of custom functions to be used as a library for Bash scripts.
 
+## How-to
+* Copy directly
+* Use as a source [1]
+
+[1] (https://www.gnu.org/software/bash/manual/bash.html#index-source)
+    (https://linuxize.com/post/bash-source-command/)
+
+
 ## Functions
 ### 0 - User validation
 * Is Sudo User
@@ -54,9 +62,6 @@ Collection of custom functions to be used as a library for Bash scripts.
 ## Key
     (*)     == out-of-scope; call function before calling variable of exact name.
     (***)   == input parameter is a reference ( Example: "variable_name" ), and is not "called" ( Ex: "${variable_name}" ).
-
-## How-to
-Copy the code above to your bash script.
 
 ## TO-DO
     * remove out-of-scope variables. Replace with references (see Key).
