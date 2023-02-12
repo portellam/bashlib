@@ -5,8 +5,9 @@ Collection of custom functions to be used as a library for Bash scripts.
 * Copy directly
 * Use as a source [1]
 
-[1] (https://www.gnu.org/software/bash/manual/bash.html#index-source)
-    (https://linuxize.com/post/bash-source-command/)
+[1] 
+    * https://www.gnu.org/software/bash/manual/bash.html#index-source
+    * https://linuxize.com/post/bash-source-command/
 
 
 ## Functions
@@ -24,7 +25,7 @@ Collection of custom functions to be used as a library for Bash scripts.
     * Array Boolean, String, Number
     * Is Not Empty, Is Not Null, Is Not Readonly
 * Arrays
-    * Is Not Empty*** , Print***
+    * Is Not Empty [2] , Print [2]
 
 ### 3 - Process/library validation
 * Commands, Daemons, Processes
@@ -32,7 +33,7 @@ Collection of custom functions to be used as a library for Bash scripts.
     
 ### 4 - File operation and validation
 * Files
-    * Are Equal, Backup, Create Delete, Find, Is Executable/Readable/Writable, Overwrite*** , Print, Read*** , Restore, Write***
+    * Are Equal, Backup, Create Delete, Find, Is Executable/Readable/Writable, Overwrite [2] , Print, Read [2] , Restore, Write [2]
 * Directories
     * Create
 * Find Line (in File)
@@ -44,8 +45,8 @@ Collection of custom functions to be used as a library for Bash scripts.
 
 ### 6 - User input
 * Read input (Y/n).
-* Read input from range of numbers. *
-* Read multiple-choice (ignore-case or match-case). *
+* Read input from range of numbers. [3]
+* Read multiple-choice (ignore-case or match-case). [3]
 
 ### 7 - Software Validation
 * Check if software package(s) exists within the package repository.
@@ -60,8 +61,10 @@ Collection of custom functions to be used as a library for Bash scripts.
 * Operation status statements ( Ex: "Pass", "Fail", prefixes and suffixes ).
 
 ## Key
-    (*)     == out-of-scope; call function before calling variable of exact name.
-    (***)   == input parameter is a reference ( Example: "variable_name" ), and is not "called" ( Ex: "${variable_name}" ).
+[2]
+    * input parameter is a reference ( Example: "variable_name" ), and is not "called" ( Ex: "${variable_name}" ).
+[3] 
+    * out-of-scope; call function before calling variable of exact name.
 
 ## TO-DO
     * remove out-of-scope variables. Replace with references (see Key).
