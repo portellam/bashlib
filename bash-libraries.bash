@@ -380,8 +380,8 @@
         # <returns> exit code </returns>
         function AreEqualFiles
         {
-            FindFile $2 || return $?
-            FindFile $1 || return $?
+            IsFile $2 || return $?
+            IsFile $1 || return $?
 
             # <params>
             local readonly var_command='cmp -s $1 $2'
@@ -398,7 +398,7 @@
         {
             function BackupFile_Main
             {
-                FindFile $1 || return $?
+                IsFile $1 || return $?
 
                 # <params>
                 declare -ir int_max_count=4
@@ -462,7 +462,7 @@
         function CreateDir
         {
             IsString $1 || return $?
-            FindDir $1 &> /dev/null && return 0
+            IsDir $1 &> /dev/null && return 0
 
             # <params>
             local readonly str_fail="${var_prefix_fail} Could not create directory '${1}'."
@@ -483,11 +483,11 @@
         function CreateFile
         {
             IsString $1 || return $?
-            FindFile $1 &> /dev/null && return 0
+            IsFile $1 &> /dev/null && return 0
 
             # <params>
             local readonly str_fail="${var_prefix_fail} Could not create file '${1}'."
-            local readonly var_command='touch $1 &> /dev/null"'
+            local readonly var_command='touch '"$1"' &> /dev/null'
             # </params>
 
             if ! eval "${var_command}"; then
@@ -504,56 +504,16 @@
         function DeleteFile
         {
             IsString $1 || return $?
-            FindFile $1 &> /dev/null && return 0
+            IsFile $1 &> /dev/null && return 0
 
             # <params>
             local readonly str_fail="${var_prefix_fail} Could not delete file '${1}'."
-            local readonly var_command='rm $1'
+            local readonly var_command='rm '"$1"
             # </params>
 
             if ! eval "${var_command}"; then
                 echo -e "${str_fail}"
                 return 1
-            fi
-
-            return 0
-        }
-
-        # <summary> Check if the directory exists. If true, pass. </summary>
-        # <param name=$1> string: the directory name </param>
-        # <returns> exit code </returns>
-        function FindDir
-        {
-            IsString $1 || return $?
-
-            # <params>
-            local readonly str_fail="${var_prefix_error} Directory '${1}' does not exist."
-            local readonly var_command='-d $1'
-            # </params>
-
-            if ! eval "${var_command}"; then
-                echo -e "${str_fail}"
-                return "${int_code_dir_is_null}"
-            fi
-
-            return 0
-        }
-
-        # <summary> Check if the file exists. If true, pass. </summary>
-        # <param name=$1> string: the file name </param>
-        # <returns> exit code </returns>
-        function FindFile
-        {
-            IsString $1 || return $?
-
-            # <params>
-            local readonly str_fail="${var_prefix_error} File '${1}' does not exist."
-            local readonly var_command='-e $1'
-            # </params>
-
-            if ! eval "${var_command}"; then
-                echo -e "${str_fail}"
-                return "${int_code_dir_is_null}"
             fi
 
             return 0
@@ -566,7 +526,7 @@
         function FindLine
         {
             IsString $2 || return $?
-            FindFile $1 || return $?
+            IsFile $1 || return $?
 
             # <params>
             local readonly var_command='! -z $( grep -iF $2 $1 )'
@@ -576,12 +536,50 @@
             return 0
         }
 
+        # <summary> Check if the directory exists. If true, pass. </summary>
+        # <param name=$1> string: the directory name </param>
+        # <returns> exit code </returns>
+        function IsDir
+        {
+            IsString $1 || return $?
+
+            # <params>
+            local readonly str_fail="${var_prefix_error} File '${1}' is not a directory."
+            # </params>
+
+            if [[ ! -d $1 ]]; then
+                echo -e "${str_fail}"
+                return "${int_code_dir_is_null}"
+            fi
+
+            return 0
+        }
+
+        # <summary> Check if the file exists. If true, pass. </summary>
+        # <param name=$1> string: the file name </param>
+        # <returns> exit code </returns>
+        function IsFile
+        {
+            IsString $1 || return $?
+
+            # <params>
+            local readonly str_fail="${var_prefix_error} '${1}' is not a file."
+            # </params>
+
+            if [[ ! -e $1 ]]; then
+                echo -e "${str_fail}"
+                return "${int_code_dir_is_null}"
+            fi
+
+            return 0
+        }
+
         # <summary> Check if the file is executable. If true, pass. </summary>
         # <param name=$1> string: the file name </param>
         # <returns> exit code </returns>
         function IsExecutableFile
         {
-            FindFile $1 || return $?
+            IsFile $1 || return $?
 
             # <params>
             local readonly str_fail="${var_prefix_error} File '${1}' is not executable."
@@ -601,7 +599,7 @@
         # <returns> exit code </returns>
         function IsReadableFile
         {
-            FindFile $1 || return $?
+            IsFile $1 || return $?
 
             # <params>
             local readonly str_fail="${var_prefix_error} File '${1}' is not readable."
@@ -621,7 +619,7 @@
         # <returns> exit code </returns>
         function IsWritableFile
         {
-            FindFile $1 || return $?
+            IsFile $1 || return $?
 
             # <params>
             local readonly str_fail="${var_prefix_error} File '${1}' is not writable."
@@ -654,12 +652,13 @@
         # <returns> exit code </returns>
         function PrintFile
         {
-            FindFile $1 || return $?
+            IsFile $1 || return $?
 
             # <params>
-            declare -a arr_print_file=()
+            IFS=$'\n'
+            declare -a arr_print_file=( )
             local readonly str_output="Contents for file ${var_yellow}'${1}'${var_reset_color}:"
-            local readonly var_command='cat $1'
+            # local readonly var_print_file='cat $1'
             # </params>
 
             echo -e "${str_output}"
@@ -674,14 +673,14 @@
         # <returns> exit code </returns>
         function ReadFile
         {
-            FindFile $2 || return $?
+            IsFile $2 || return $?
             IsString $1 || return $?
 
             # <params>
             IFS=$'\n'
             local readonly str_fail="${var_prefix_fail} Could not read from file '${2}'."
-            local readonly var_get_file='cat $2'
-            local readonly var_set_param=$1'=( $( echo -e "${arr_read_file[@]}" ) )'
+            local readonly var_get_file='cat '"$2"                                                  # NOTE: I am confused. I need to take a break.
+            local readonly var_set_param="$1"'=( "${MAPFILE[@]}" )'
             declare -a arr_read_file=( $( eval "${var_get_file}" ) )
             # </params>
 
@@ -701,7 +700,7 @@
         {
             function RestoreFile_Main
             {
-                FindFile $1 || return $?
+                IsFile $1 || return $?
 
                 # <params>
                 local bool=false
@@ -714,7 +713,7 @@
                 IsNotEmptyArray "arr_dir" || return $?
 
                 for var_element in "${arr_dir[@]}"; do
-                    FindFile "${var_element}" && cp "${var_element}" $1 && return 0
+                    IsFile "${var_element}" && cp "${var_element}" $1 && return 0
                 done
 
                 return 1
@@ -737,7 +736,7 @@
         # <returns> exit code </returns>
         function WriteFile
         {
-            FindFile $2 || return $?
+            IsFile $2 || return $?
             IsNotEmptyArray $1 || return $?
 
             # <params>
@@ -998,7 +997,7 @@
             # <params>
             declare -i int_max_tries=3
             declare -ar arr_count=( $( seq 0 "${int_max_tries}" ) )
-            declare -a arr_input=()
+            declare -a arr_input=( )
             local str_output=""
             local readonly str_fail="${var_prefix_error} Insufficient multiple choice answers."
             var_input=""
@@ -1062,7 +1061,7 @@
             # <params>
             declare -i int_max_tries=3
             declare -ar arr_count=( $( seq 0 "${int_max_tries}" ) )
-            declare -a arr_input=()
+            declare -a arr_input=( )
             local str_output=""
             local readonly str_fail="${var_prefix_error} Insufficient multiple choice answers."
             var_input=""
@@ -1185,7 +1184,7 @@
             # </params>
 
             # <summary> Original system file does not exist. </summary>
-            if $bool_is_connected_to_Internet && ! FindFile $1; then
+            if $bool_is_connected_to_Internet && ! IsFile $1; then
                 InstallPackage $2 true && bool_system_file_is_original=true
             fi
 
@@ -1193,7 +1192,7 @@
             #     bool_backup_file_exists=true
             # fi
 
-            if cp $1 "${str_backup_file}" && FindFile $1; then
+            if cp $1 "${str_backup_file}" && IsFile $1; then
                 bool_backup_file_exists=true
             else
                 return 1
@@ -1352,14 +1351,14 @@
             CreateDir "${1}${3}"
 
             # <summary> Update existing GitHub repository. </summary>
-            if FindDir "${1}${2}" &> /dev/null; then
+            if IsDir "${1}${2}" &> /dev/null; then
                 local readonly var_command="git pull"
 
                 cd "${1}${2}" && StopEvalAfterThriceFail $( eval "${var_command}" ) &> /dev/null
                 return $?
 
             # <summary> Clone new GitHub repository. </summary>
-            elif FindDir "${1}${3}" &> /dev/null; then
+            elif IsDir "${1}${3}" &> /dev/null; then
                 if ReadInput "Clone repo '${2}'?"; then
                     local readonly var_command="git clone https://github.com/${2}"
 
