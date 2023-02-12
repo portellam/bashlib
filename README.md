@@ -3,53 +3,36 @@ Collection of custom functions to be used as a library for Bash scripts.
 
 ## Functions
 ### 0 - User validation
-    * Check if current user is sudo or root.
+* Is Sudo User
 
 ### 1 - Setup and command operation/validation
-    * Append a "Pass" or "Fail" given return code.
-    * Go to script directory.
-    * Parse given return code as boolean.
-    * Save last exit return code.
-    * Try last action X times before failure. ( Example: useful for important pre-requisites that other actions depend upon )
+* Parse return code as boolean.
+* Print Pass or Fail given return code.
+* Save last return code.
+* Stop execution after thrice failures.
 
 ### 2 - Data-type and variable validation
-    * Check if array is empty. ***
-    * Check if variable is bool.
-    * Check if var is number.
-    * Check if var is empty.
-    * Check if var is null.
-    * Check if string is empty.
-    * Check if var is readonly.
+* Variables
+    * Array Boolean, String, Number
+    * Is Not Empty, Is Not Null, Is Not Readonly
+* Array
+    * Is Not Empty*** , Print***
 
 ### 3 - Process/library validation
-    * Check if command is installed.
-    * Check if daemon (systemd service) is active.
-    * Check if daemon is installed.
-    * Check if process is active.
-
+* Command, Daemon, Process
+    * Is Active, Is Installed
+    
 ### 4 - File operation and validation
-    * Check if file contains given line.
-    * Check if directory exists.
-    * Check if file exists.
-    * Check if file is...
-        * executable
-        * readable
-        * writable
-    * Check if two file are the same.
-    * Create backup file (up to set value).
-    * Create dir.
-    * Create file.
-    * Delete file (or dir).
-    * Print array. ***
-    * Print file. ***
-    * Read file. ***
-    * Restore backup file (up to set value).
-    * Write or overwrite file with line(s) (string or array). ***
+* File
+    * Are Equal, Backup, Create Delete, Find, Is Executable/Readable/Writable, Overwrite*** , Print, Read*** , Restore, Write***
+* Dir
+    * Create
+* Find Line (in File)
 
 ### 5 - Device validation
     * Find package manager (set global string) by the system Linux distribution.
-    * Get status of Internet connection (URL and DNS). Toggle verbosity.
-    * Update status of Internet connection and set global bool.
+    * Get Internet Status
+    * Update Internet Status and set global bool.
 
 ### 6 - User input
     * Read input (Y/n).
@@ -67,7 +50,6 @@ Collection of custom functions to be used as a library for Bash scripts.
     * Exit codes, for consistency in catching exceptions, error-checking, etc.
     * Global variable for status of given functions ( Example: Device validation, Software validation).
     * Operation status statements ( Ex: "Pass", "Fail", prefixes and suffixes ).
-    
 
 ## Key
     (*)     == out-of-scope; call function before calling variable of exact name.
@@ -79,3 +61,5 @@ Copy the code above to your bash script.
 ## TO-DO
     * remove out-of-scope variables. Replace with references (see Key).
     * test ability to use "source" or ability to call this script, like a using statement for libraries in Compiled languages.
+    * if using this script as source file, set file to readonly.
+        * verify integrity someway?
