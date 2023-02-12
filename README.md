@@ -7,8 +7,8 @@ Collection of custom functions to be used as a library for Bash scripts.
 
 [1]
 
-    * https://www.gnu.org/software/bash/manual/bash.html#index-source
-    * https://linuxize.com/post/bash-source-command/
+    https://www.gnu.org/software/bash/manual/bash.html#index-source
+    https://linuxize.com/post/bash-source-command/
 
 
 ## Functions
@@ -64,10 +64,10 @@ Collection of custom functions to be used as a library for Bash scripts.
 ## Key
 [2]
 
-    * input parameter is a reference ( Example: "variable_name" ), and is not "called" ( Ex: "${variable_name}" ).
+    input parameter is a reference ( Example: "variable_name" ), and is not "called" ( Ex: "${variable_name}" ).
 [3]
 
-    * out-of-scope; call function before calling variable of exact name.
+    out-of-scope; call function before calling variable of exact name.
 
 ## TO-DO
     * remove out-of-scope variables. Replace with references (see Key).
