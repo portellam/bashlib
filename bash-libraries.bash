@@ -1,7 +1,7 @@
 #!/bin/bash sh
 
 #
-# Filename:         your_script_name_here
+# Filename:         your_script_name_here.bash
 # Description:      your_script_description_here
 # Author(s):        your_name_here
 # Maintainer(s):    your_name_here
@@ -40,6 +40,19 @@
 
     # <summary> #1 - Setup and command operation/validation </summary>
     # <code>
+        # <summary> Redirect current directory to shell script root directory. </summary>
+        # <param name="${0}"> string: the shell script name </param>
+        # <returns> exit code </returns>
+        function GoToScriptDir
+        {
+            # <params>
+            local readonly str_dir=$( dirname "${0}" )
+            # </params>
+
+            cd "${str_dir}" || return 1
+            return 0
+        }
+
         # <summary> Append Pass or Fail given exit code. </summary>
         # <param name="${int_exit_code}"> the last exit code </param>
         # <param name="${1}"> string: the output statement </param>
@@ -68,19 +81,6 @@
             esac
 
             return "${int_exit_code}"
-        }
-
-        # <summary> Redirect current directory to shell script root directory. </summary>
-        # <param name="${0}"> string: the shell script name </param>
-        # <returns> exit code </returns>
-        function GoToScriptDir
-        {
-            # <params>
-            local readonly str_dir=$( dirname "${0}" )
-            # </params>
-
-            cd "${str_dir}" || return 1
-            return 0
         }
 
         # <summary> Parse exit code as boolean. If zero, return true. Else, return false. </summary>
@@ -1434,8 +1434,9 @@
 
 # =========================================================================================== #
 
-#
-# YOUR CODE BELOW
-#
+# <remarks> your_script_name_here.bash </remarks>
+    #
+    # YOUR CODE BELOW
+    #
 
 exit 0
