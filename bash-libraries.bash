@@ -1,15 +1,6 @@
 #!/bin/bash sh
 
 #
-# Filename:         your_script_name_here.bash
-# Description:      your_script_description_here
-# Author(s):        your_name_here
-# Maintainer(s):    your_name_here
-#
-
-# =========================================================================================== #
-
-#
 # Filename:         bash-libraries.bash
 # Description:      Collection of custom functions to be used as a library for Bash scripts.
 # Author(s):        Alex Portell <github.com/portellam>
@@ -28,7 +19,7 @@
             local readonly str_fail="${var_prefix_warn} User is not sudo/root. In terminal, enter: ${var_yellow}'sudo bash ${str_file}'${var_reset_color}."
             local readonly var_command='$( whoami ) == "root"'
             # </params>
-            
+
             if ! eval "${var_command}"; then
                 echo -e "${str_fail}"
                 return 1
@@ -229,7 +220,7 @@
 
             return 0
         }
-       
+
         # <summary> Check if the variable is valid. If true, pass. </summary>
         # <param name="${1}"> var: the variable </param>
         # <returns> exit code </returns>
@@ -239,18 +230,18 @@
             IsNotEmptyVar "${1}" || return "${?}"
             return 0
         }
-        
+
         # <summary> Check if the variable is writable. If true, pass. </summary>
         # <param name="${1}"> string: the name of a variable </param>
         # <returns> exit code </returns>
         function IsWritableVar
         {
             IsNotEmptyVar "${1}" || return "${?}"
-        
+
             # <params>
             local readonly var_command='"${1}+=" >2/dev/null'
             # </params>
-            
+
             eval "${var_command}"
             return "${?}"
         }
@@ -394,7 +385,7 @@
             eval ! "${var_command}" || return 1
             return 0
         }
-        
+
         # <summary> Create latest backup of given file (do not exceed given maximum count). </summary>
         # <parameter name="${1}"> string: the file </parameter>
         # <returns> exit code </returns>
@@ -639,7 +630,7 @@
 
             return 0
         }
-                
+
         # <summary> Overwrite output to a file. Declare inherited params before calling this function. </summary>
         # <paramref name="${1}"> string: the name of the array </paramref>
         # <param name="${2}"> string: the name of the file </param>
@@ -652,7 +643,7 @@
             WriteFile "${1}" "${2}"
             return "${?}"
         }
-        
+
         # <summary> Output a file. </summary>
         # <param name="${1}"> string: the file </param>
         # <returns> exit code </returns>
@@ -680,7 +671,7 @@
         {
             FindFile "${2}" || return "${?}"
             IsNotEmptyVar "${1}" || return "${?}"
-            
+
             # <params>
             IFS=$'\n'
             local readonly str_fail="${var_prefix_fail} Could not read from file '${2}'."
@@ -743,7 +734,7 @@
         {
             FindFile "${2}" || return "${?}"
             IsNotEmptyArray "${1}" || return "${?}"
-            
+
             # <params>
             local readonly str_fail="${var_prefix_fail} Could not write to file '${1}'."
             local readonly str_name_ref="${1}"
@@ -758,7 +749,7 @@
             fi
 
             return 0
-        }    
+        }
     # </code>
 
     # <summary> #5 - Device validation </summary>
@@ -774,7 +765,7 @@
                 ping -q -c 1 "${1}" &> /dev/null || return 1
                 return 0
             }
-            
+
             # <params>
             local bool=false
             # </params>
@@ -833,7 +824,7 @@
             local readonly str_OS_with_urpmi="opensuse"
             local readonly str_OS_with_zypper="mandriva mageia"
             # </params>
-            
+
             if ! IsValidValid "${str_kernel}" &> /dev/null || ! IsValidValid "${str_operating_system}" &> /dev/null; then
                 return "${?}"
             fi
@@ -1431,12 +1422,5 @@
             declare -gr str_output_please_wait="The following operation may take a moment. ${var_blinking_yellow}Please wait.${var_reset_color}"
             declare -gr str_output_var_is_not_valid="${var_prefix_error} Invalid input."
     # </params>
-
-# =========================================================================================== #
-
-# <remarks> your_script_name_here.bash </remarks>
-    #
-    # YOUR CODE BELOW
-    #
 
 exit 0
