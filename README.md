@@ -5,7 +5,8 @@ Collection of custom functions to be used as a library for Bash scripts.
 * Copy directly
 * Use as a source [1]
 
-[1] 
+[1]
+
     * https://www.gnu.org/software/bash/manual/bash.html#index-source
     * https://linuxize.com/post/bash-source-command/
 
@@ -30,7 +31,7 @@ Collection of custom functions to be used as a library for Bash scripts.
 ### 3 - Process/library validation
 * Commands, Daemons, Processes
     * Is Active, Is Installed
-    
+
 ### 4 - File operation and validation
 * Files
     * Are Equal, Backup, Create Delete, Find, Is Executable/Readable/Writable, Overwrite [2] , Print, Read [2] , Restore, Write [2]
@@ -62,8 +63,10 @@ Collection of custom functions to be used as a library for Bash scripts.
 
 ## Key
 [2]
+
     * input parameter is a reference ( Example: "variable_name" ), and is not "called" ( Ex: "${variable_name}" ).
-[3] 
+[3]
+
     * out-of-scope; call function before calling variable of exact name.
 
 ## TO-DO
