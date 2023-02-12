@@ -253,7 +253,30 @@
             
             eval "${var_command}"
             return "${?}"
-        }    
+        }
+
+        # <summary> Output an array. Declare inherited params before calling this function. </summary>
+        # <paramref name="${1}"> string: name of the array </paramref>
+        # <returns> exit code </returns>
+        function PrintArray
+        {
+            IsNotEmptyVar "${1}" || return "${?}"
+
+            # <params>
+            IFS=$'\n'
+            local readonly str_name_ref="${1}"
+            declare -ar arr_output=$( "${str_name_ref[@]}" )
+            local readonly var_command='echo -e "${var_yellow}${arr_output[*]}${var_reset_color}"'
+            # </params>
+
+            if ! IsNotEmptyArray "arr_output" &> /dev/null; then
+                return 1
+            fi
+
+            echo
+            eval "${var_command}" || return 1
+            return 0
+        }
     # </code>
 
     # <summary> #3 - Process/library validation </summary>
@@ -500,23 +523,6 @@
             return 0
         }
 
-        # <summary> Create a file. If true, pass. </summary>
-        # <param name="${1}"> string: the file </param>
-        # <param name="${2}"> string: the line </param>
-        # <returns> exit code </returns>
-        function FindLine
-        {
-            IsValidValid "${2}" || return "${?}"
-            FindFile "${1}" || return "${?}"
-
-            # <params>
-            local readonly var_command='! -z $( grep -iF "${2}" "${1}" )'
-            # </params>
-
-            ! eval "${var_command}" || return 1
-            return 0
-        }
-
         # <summary> Check if the directory exists. If true, pass. </summary>
         # <param name="${1}"> string: the directory name </param>
         # <returns> exit code </returns>
@@ -554,6 +560,23 @@
                 return "${int_code_dir_is_null}"
             fi
 
+            return 0
+        }
+
+        # <summary> Create a file. If true, pass. </summary>
+        # <param name="${1}"> string: the file </param>
+        # <param name="${2}"> string: the line </param>
+        # <returns> exit code </returns>
+        function FindLine
+        {
+            IsValidValid "${2}" || return "${?}"
+            FindFile "${1}" || return "${?}"
+
+            # <params>
+            local readonly var_command='! -z $( grep -iF "${2}" "${1}" )'
+            # </params>
+
+            ! eval "${var_command}" || return 1
             return 0
         }
 
@@ -646,29 +669,6 @@
             echo -e "${str_output}"
             ReadFile "arr_print_file" "${1}" || return "${?}"
             PrintArray "arr_print_file" || return "${?}"
-            return 0
-        }
-
-        # <summary> Output an array. Declare inherited params before calling this function. </summary>
-        # <paramref name="${1}"> string: name of the array </paramref>
-        # <returns> exit code </returns>
-        function PrintArray
-        {
-            IsNotEmptyVar "${1}" || return "${?}"
-
-            # <params>
-            IFS=$'\n'
-            local readonly str_name_ref="${1}"
-            declare -ar arr_output=$( "${str_name_ref[@]}" )
-            local readonly var_command='echo -e "${var_yellow}${arr_output[*]}${var_reset_color}"'
-            # </params>
-
-            if ! IsNotEmptyArray "arr_output" &> /dev/null; then
-                return 1
-            fi
-
-            echo
-            eval "${var_command}" || return 1
             return 0
         }
 
