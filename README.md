@@ -71,6 +71,3 @@ Collection of custom functions to be used as a library for Bash scripts.
 
 ## TO-DO
     * remove out-of-scope variables. Replace with references (see Key).
-    * test ability to use "source" or ability to call this script, like a using statement for libraries in Compiled languages.
-    * if using this script as source file, set file to readonly.
-        * verify integrity someway?
