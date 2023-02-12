@@ -9,9 +9,9 @@
 
 # TODO:
 # * test/debug each function as source
-#   * todo: 2-7
-#   * pass: 0,1
-#   * fail: arrays (1)
+#   * todo: 3-7
+#   * pass: 0,1,2
+#   * fail: none yet
 #
 
 # <remarks> bash-libraries </remarks>
