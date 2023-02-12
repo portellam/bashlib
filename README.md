@@ -24,7 +24,7 @@ Collection of custom functions to be used as a library for Bash scripts.
 ### 2 - Data-type and variable validation
 * Variables
     * Array Boolean, String, Number
-    * Is Not Empty, Is Not Null, Is Not Readonly
+    * Is Not Empty, Is Not Null, Is Not Readonly [2]
 * Arrays
     * Is Not Empty [2] , Print [2]
 
