@@ -102,7 +102,7 @@
     # <summary> Check if the variable is writable. If true, pass. </summary>
     # <paramref name=$1> string: the name of a variable </param>
     # <returns> exit code </returns>
-    function IsWritableVar
+    function IsVarWritable
     {
         IsString $1 || return $?
 

@@ -106,7 +106,7 @@
 
         # <params>
         local readonly str_fail="${var_prefix_fail} Could not create directory '${1}'."
-        local readonly var_command='mkdir -p $1'
+        local readonly var_command='mkdir -p $1 &> /dev/null'
         # </params>
 
         if ! eval "${var_command}"; then
@@ -138,17 +138,38 @@
         return 0
     }
 
-    # <summary> Delete a dir/file. </summary>
+    # <summary> Delete a directory. </summary>
+    # <param name=$1> string: the file </param>
+    # <returns> exit code </returns>
+    function DeleteDir
+    {
+        IsString $1 || return $?
+        IsDir $1 &> /dev/null || return 1
+
+        # <params>
+        local readonly str_fail="${var_prefix_fail} Could not delete directory '${1}'."
+        local readonly var_command='rm -r '"$1"' &> /dev/null'
+        # </params>
+
+        if ! eval "${var_command}"; then
+            echo -e "${str_fail}"
+            return 1
+        fi
+
+        return 0
+    }
+
+    # <summary> Delete a file. </summary>
     # <param name=$1> string: the file </param>
     # <returns> exit code </returns>
     function DeleteFile
     {
         IsString $1 || return $?
-        IsFile $1 &> /dev/null && return 0
+        IsFile $1 &> /dev/null || return 1
 
         # <params>
         local readonly str_fail="${var_prefix_fail} Could not delete file '${1}'."
-        local readonly var_command='rm '"$1"
+        local readonly var_command='rm '"$1"' &> /dev/null'
         # </params>
 
         if ! eval "${var_command}"; then
@@ -172,7 +193,10 @@
         local readonly var_command='! -z $( grep -iF $2 $1 )'
         # </params>
 
-        ! eval "${var_command}" || return 1
+        if [[ -z $( grep -iF $2 $1 ) ]]; then
+            return 1
+        fi
+
         return 0
     }
 
@@ -206,27 +230,29 @@
         local readonly str_fail="${var_prefix_error} '${1}' is not a file."
         # </params>
 
-        if [[ ! -e $1 ]]; then
+        if ! IsDir $1 &> /dev/null && [[ ! -e $1 ]]; then
             echo -e "${str_fail}"
             return "${int_code_dir_is_null}"
+        elif IsDir $1 &> /dev/null; then
+            echo -e "${str_fail}"
+            return "${int_code_dir_is_null}"
+        else
+            return 0
         fi
-
-        return 0
     }
 
     # <summary> Check if the file is executable. If true, pass. </summary>
     # <param name=$1> string: the file name </param>
     # <returns> exit code </returns>
-    function IsExecutableFile
+    function IsFileExecutable
     {
         IsFile $1 || return $?
 
         # <params>
         local readonly str_fail="${var_prefix_error} File '${1}' is not executable."
-        local readonly var_command='-x $1'
         # </params>
 
-        if ! eval "${var_command}"; then
+        if [[ ! -x $1 ]]; then
             echo -e "${str_fail}"
             return "${int_code_file_is_not_executable}"
         fi
@@ -237,16 +263,15 @@
     # <summary> Check if the file is readable. If true, pass. </summary>
     # <param name=$1> string: the file name </param>
     # <returns> exit code </returns>
-    function IsReadableFile
+    function IsFileReadable
     {
         IsFile $1 || return $?
 
         # <params>
         local readonly str_fail="${var_prefix_error} File '${1}' is not readable."
-        local readonly var_command='-r $1'
         # </params>
 
-        if ! eval "${var_command}"; then
+        if [[ ! -r $1 ]]; then
             echo -e "${str_fail}"
             return "${int_code_file_is_not_readable}"
         fi
@@ -257,16 +282,15 @@
     # <summary> Check if the file is writable. If true, pass. </summary>
     # <param name=$1> string: the file name </param>
     # <returns> exit code </returns>
-    function IsWritableFile
+    function IsFileWritable
     {
         IsFile $1 || return $?
 
         # <params>
         local readonly str_fail="${var_prefix_error} File '${1}' is not writable."
-        local readonly var_command='-w $1'
         # </params>
 
-        if ! eval "${var_command}"; then
+        if [[ ! -w $1 ]]; then
             echo -e "${str_fail}"
             return "${int_code_file_is_not_writable}"
         fi
