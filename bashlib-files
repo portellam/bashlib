@@ -31,6 +31,7 @@
         return 0
     }
 
+    # TODO: needs work!
     # <summary> Create latest backup of given file (do not exceed given maximum count). </summary>
     # <parameter name=$1> string: the file </parameter>
     # <returns> exit code </returns>
@@ -44,20 +45,35 @@
             declare -ir int_max_count=4
             local readonly str_dir=$( dirname $1 )
             local readonly str_suffix=".old"
-            local readonly var_command='ls "${str_dir}" | grep $1 | grep $str_suffix | uniq | sort -V'
+            local readonly var_command='ls '"${str_dir}"' | grep '$1' | grep -i '"${str_suffix}"' | uniq | sort -V'
+            local readonly var_pad_zeros='str_index=$( printf %03d "${var_first_index}" )'
+            str_index=""
             declare -a arr_dir=( $( eval "${var_command}" ) )
             # </params>
 
-            IsArray "arr_dir" &> /dev/null || return $?
+            PrintArray arr_dir
+
+            # <remarks> Get index of oldest backup file. </remarks>
+            local str_oldest_file="${arr_dir[0]}"
+            str_oldest_file="${str_oldest_file%%"${str_suffix}"*}"
+            local var_first_index="${str_oldest_file##*.}"
+            IsNum "$var_first_index" || var_first_index=1
+            eval "${var_pad_zeros}"
+
+            # # <remarks> Create backup file if none exist. </remarks>
+            # if ! IsArray "arr_dir"; then
+            #     cp $1 "${1}.${var_first_index}${str_suffix}" || return 1
+            #     return 0
+            # fi
 
             # <remarks> Create backup file if none exist. </remarks>
             if [[ "${#arr_dir[@]}" -eq 0 ]]; then
-                cp $1 "${1}.${var_first_index}${str_suffix}" || return 1
+                cp $1 "${1}.${str_index}${str_suffix}" || return 1
                 return 0
             fi
 
             # <remarks> Oldest backup file is same as original file. </remarks>
-            AreEqualFiles $1 "${arr_dir[0]}" && return 0
+            # AreEqualFiles $1 "${arr_dir[0]}" && return 0
 
             # <remarks> Get index of oldest backup file. </remarks>
             local str_oldest_file="${arr_dir[0]}"
@@ -71,16 +87,19 @@
                 arr_dir=( $( eval "${var_command}" ) )
             done
 
+            PrintArray arr_dir
+
             # <remarks> Increment number of last backup file index. </remarks>
             local str_newest_file="${arr_dir[-1]}"
             str_newest_file="${str_newest_file%%"${str_suffix}"*}"
             local var_last_index="${str_newest_file##*.}"
             IsNum "${var_last_index}" || return $?
             (( var_last_index++ ))
+            eval "${var_pad_zeros}"
 
             # <remarks> Newest backup file is different and newer than original file. </remarks>
             if ( ! AreEqualFiles $1 "${arr_dir[-1]}" &> /dev/null ) && [[ $1 -nt "${arr_dir[-1]}" ]]; then
-                cp $1 "${1}.${var_last_index}${str_suffix}" || return 1
+                cp $1 "${1}.${str_index}${str_suffix}" || return 1
             fi
 
             return 0
@@ -354,6 +373,7 @@
         return $?
     }
 
+    # TODO: needs work!
     # <summary> Restore latest valid backup of given file. </summary>
     # <parameter name=$1> string: the name of the file </param>
     # <returns> exit code </returns>
