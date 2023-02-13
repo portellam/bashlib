@@ -33,9 +33,10 @@ Collection of custom functions to be used as libraries for Bash scripts.
 
 ### bashlib-files: File operation and validation
 * Files
-    * Are Equal, Backup, Create Delete, Find, Is Executable/Readable/Writable, Overwrite [2] , Print, Read [2] , Restore, Write [2]
+    * Are Equal, Backup, Create Delete, Is File, Is Executable/Readable/Writable, Overwrite [2] , Print, Read [2] , Restore, Write [2]
 * Directories
     * Create
+    * Is Directory
 * Find Line (in File)
 
 ### bashlib-dev: Device and Software validation
