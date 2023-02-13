@@ -16,7 +16,7 @@
     # <summary> Check if the array is empty. </summary>
     # <paramref name=$1> string: name of the array </paramref>
     # <returns> exit code </returns>
-    function IsNotEmptyArray
+    function IsArray
     {
         IsString $1 || return $?
 
@@ -131,7 +131,7 @@
         local readonly var_print_array='echo -e "${var_yellow}${'$1'[*]}${var_reset_color}"'
         # </params>
 
-        if ! IsNotEmptyArray "$1" &> /dev/null; then
+        if ! IsArray "$1" &> /dev/null; then
             return 1
         fi
 

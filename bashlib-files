@@ -48,7 +48,7 @@
             declare -a arr_dir=( $( eval "${var_command}" ) )
             # </params>
 
-            IsNotEmptyArray "arr_dir" &> /dev/null || return $?
+            IsArray "arr_dir" &> /dev/null || return $?
 
             # <remarks> Create backup file if none exist. </remarks>
             if [[ "${#arr_dir[@]}" -eq 0 ]]; then
@@ -304,7 +304,7 @@
     # <returns> exit code </returns>
     function OverwriteFile
     {
-        IsNotEmptyArray $1 || return $?
+        IsArray $1 || return $?
         DeleteFile $2
         CreateFile $2 || return $?
         WriteFile $1 $2
@@ -348,7 +348,7 @@
         declare -a arr_read_file=( $( eval "${var_get_file}" ) )
         # </params>
 
-        if ! IsNotEmptyArray "arr_read_file" &> /dev/null; then
+        if ! IsArray "arr_read_file" &> /dev/null; then
             echo -e "${str_fail}"
             return 1
         fi
@@ -374,7 +374,7 @@
             declare -a arr_dir=( $( eval "${var_command}" ) )
             # </params>
 
-            IsNotEmptyArray "arr_dir" || return $?
+            IsArray "arr_dir" || return $?
 
             for var_element in "${arr_dir[@]}"; do
                 IsFile "${var_element}" && cp "${var_element}" $1 && return 0
@@ -400,7 +400,7 @@
     function WriteFile
     {
         IsFile $2 || return $?
-        IsNotEmptyArray $1 || return $?
+        IsArray $1 || return $?
 
         # <params>
         local readonly str_fail="${var_prefix_fail} Could not write to file '${1}'."
