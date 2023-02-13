@@ -322,12 +322,9 @@
         IFS=$'\n'
         declare -a arr_print_file=( )
         local readonly str_output="Contents for file ${var_yellow}'${1}'${var_reset_color}:"
-        # local readonly var_print_file='cat $1'
         # </params>
 
-        echo -e "${str_output}"
         ReadFile "arr_print_file" $1 || return $?
-        echo -e ${arr_print_file[@]}
         PrintArray "arr_print_file"
         return $?
     }
@@ -404,10 +401,7 @@
 
         # <params>
         local readonly str_fail="${var_prefix_fail} Could not write to file '${1}'."
-        local readonly str_name_ref=$1
-        local readonly var_get_arr='( $( echo -e "${str_name_ref[@]}" ) )'
-        local readonly var_set_file='printf "%s\n" "${arr[@]}" >> $2'
-        declare -ar arr=( $( eval "${var_get_arr}" ) )
+        local readonly var_set_file='printf "%s\n" "${'$1'[@]}" >> $2'
         # </params>
 
         if ! eval "${var_set_file}"; then
