@@ -31,80 +31,74 @@
         return 0
     }
 
-    # TODO: needs work!
-    # <summary> Create latest backup of given file (do not exceed given maximum count). </summary>
-    # <parameter name=$1> string: the file </parameter>
-    # <returns> exit code </returns>
-    function BackupFile
-    {
-        function BackupFile_Main
-        {
-            # TODO: need to reverse pad out zeros, such that we can get the proper integer.
+    # # TODO: needs work!
+    # # <summary> Create latest backup of given file (do not exceed given maximum count). </summary>
+    # # <parameter name=$1> string: the file </parameter>
+    # # <returns> exit code </returns>
+    # function BackupFile
+    # {
+    #     function BackupFile_Main
+    #     {
+    #         # TODO: need to reverse pad out zeros, such that we can get the proper integer.
 
-            IsFile $1 || return $?
+    #         IsFile $1 || return $?
 
-            # <params>
-            declare -ir int_max_count=5
-            local readonly str_suffix=".old"
-            local readonly var_get_backups='ls '"${str_dir}"' | grep '$1' | grep -i '"${str_suffix}"' | uniq | sort -V'
-            local readonly var_pad_zeros='str_index=$( printf %03d "${int_index}" )'
-            declare -a arr_dir=( $( eval "${var_get_backups}" ) )
-            declare -i int_index=1
-            # </params>
+    #         # <params>
+    #         declare -ir int_max_count=5
+    #         local readonly str_suffix=".old"
+    #         local readonly var_get_backups='ls '"${str_dir}"' | grep '$1' | grep -i '"${str_suffix}"' | uniq | sort -V'
+    #         local readonly var_pad_zeros='str_index=$( printf %03d "${int_index}" )'
+    #         declare -a arr_dir=( $( eval "${var_get_backups}" ) )
+    #         declare -i int_index=1
+    #         # </params>
 
-            # <remarks> Get index of oldest backup file. </remarks>
-            local str_oldest_file="${arr_dir[0]}"
-            str_oldest_file="${str_oldest_file%%"${str_suffix}"*}"
-            str_index="${str_oldest_file##*0}"
-            IsNum "$str_index" && int_index="${str_index}" || int_index=1
-            eval "${var_pad_zeros}"
+    #         # <remarks> Get index of oldest backup file. </remarks>
+    #         local str_oldest_file="${arr_dir[0]}"
+    #         str_oldest_file="${str_oldest_file%%"${str_suffix}"*}"
+    #         str_index="${str_oldest_file##*0}"
+    #         IsNum "$str_index" && int_index="${str_index}" || int_index=1
+    #         eval "${var_pad_zeros}"
 
-            # <remarks> If none exist, create backup. </remarks>
-            if ! IsArray arr_dir; then
-                cp $1 "${1}.${str_index}${str_suffix}" || return 1
-            fi
+    #         # <remarks> If none exist, create backup. </remarks>
+    #         if ! IsArray arr_dir; then
+    #             cp $1 "${1}.${str_index}${str_suffix}" || return 1
+    #         fi
 
-            echo "array valid"
+    #         # <remarks> If newest backup is same as file, exit. </remarks>
+    #         if AreEqualFiles $1 "${arr_dir[-1]}"; then
+    #             return 0
+    #         fi
 
-            # <remarks> If newest backup is same as file, exit. </remarks>
-            if AreEqualFiles $1 "${arr_dir[-1]}"; then
-                return 0
-            fi
+    #         # <remarks> If amount of backups exceeds maximum, delete oldest backup. </remarks>
+    #         if [[ "${#arr_dir[@]}" -ge "${int_max_count}" ]]; then
+    #             echo "deleted file"
+    #             DeleteFile "${arr_dir[0]}" || return $?
+    #         fi
 
-            echo "files not same"
+    #         # <remarks> Get index of newest backup file. </remarks>
+    #         local str_oldest_file="${arr_dir[-1]}"
+    #         str_oldest_file="${str_oldest_file%%"${str_suffix}"*}"
+    #         str_index="${str_oldest_file##*.}"
+    #         IsNum "$str_index" && int_index="${str_index}" || int_index=1
+    #         (( int_index++ ))
+    #         echo $int_index
+    #         eval "${var_pad_zeros}"
 
-            # <remarks> If amount of backups exceeds maximum, delete oldest backup. </remarks>
-            if [[ "${#arr_dir[@]}" -ge "${int_max_count}" ]]; then
-                echo "deleted file"
-                DeleteFile "${arr_dir[0]}" || return $?
-            fi
+    #         # <remarks> Create backup. </remarks>
+    #         cp $1 "${1}.${str_index}${str_suffix}" || return 1
 
-            echo "passed deleted file"
+    #         return 0
+    #     }
 
-            # <remarks> Get index of newest backup file. </remarks>
-            local str_oldest_file="${arr_dir[-1]}"
-            str_oldest_file="${str_oldest_file%%"${str_suffix}"*}"
-            str_index="${str_oldest_file##*.}"
-            IsNum "$str_index" && int_index="${str_index}" || int_index=1
-            (( int_index++ ))
-            echo $int_index
-            eval "${var_pad_zeros}"
+    #     # <params>
+    #     local readonly str_output="Creating backup file..."
+    #     # </params>
 
-            # <remarks> Create backup. </remarks>
-            cp $1 "${1}.${str_index}${str_suffix}" || return 1
-
-            return 0
-        }
-
-        # <params>
-        local readonly str_output="Creating backup file..."
-        # </params>
-
-        echo -e "${str_output}"
-        BackupFile_Main $1
-        PrintPassOrFail "${str_output}"
-        return "${int_exit_code}"
-    }
+    #     echo -e "${str_output}"
+    #     BackupFile_Main $1
+    #     PrintPassOrFail "${str_output}"
+    #     return "${int_exit_code}"
+    # }
 
     # <summary> Create a directory. </summary>
     # <param name=$1> string: the directory </param>
@@ -364,42 +358,42 @@
         return $?
     }
 
-    # TODO: needs work!
-    # <summary> Restore latest valid backup of given file. </summary>
-    # <parameter name=$1> string: the name of the file </param>
-    # <returns> exit code </returns>
-    function RestoreFile
-    {
-        function RestoreFile_Main
-        {
-            IsFile $1 || return $?
+    # # TODO: needs work!
+    # # <summary> Restore latest valid backup of given file. </summary>
+    # # <parameter name=$1> string: the name of the file </param>
+    # # <returns> exit code </returns>
+    # function RestoreFile
+    # {
+    #     function RestoreFile_Main
+    #     {
+    #         IsFile $1 || return $?
 
-            # <params>
-            local bool=false
-            local readonly str_dir=$( dirname $1 )
-            local readonly str_suffix=".old"
-            var_command='ls "${str_dir}" | grep $1 | grep $str_suffix | uniq | sort -rV'
-            declare -a arr_dir=( $( eval "${var_command}" ) )
-            # </params>
+    #         # <params>
+    #         local bool=false
+    #         local readonly str_dir=$( dirname $1 )
+    #         local readonly str_suffix=".old"
+    #         var_command='ls "${str_dir}" | grep $1 | grep $str_suffix | uniq | sort -rV'
+    #         declare -a arr_dir=( $( eval "${var_command}" ) )
+    #         # </params>
 
-            IsArray "arr_dir" || return $?
+    #         IsArray "arr_dir" || return $?
 
-            for var_element in "${arr_dir[@]}"; do
-                IsFile "${var_element}" && cp "${var_element}" $1 && return 0
-            done
+    #         for var_element in "${arr_dir[@]}"; do
+    #             IsFile "${var_element}" && cp "${var_element}" $1 && return 0
+    #         done
 
-            return 1
-        }
+    #         return 1
+    #     }
 
-        # <params>
-        local readonly str_output="Restoring backup file..."
-        # </params>
+    #     # <params>
+    #     local readonly str_output="Restoring backup file..."
+    #     # </params>
 
-        echo -e "${str_output}"
-        RestoreFile_Main $1
-        PrintPassOrFail "${str_output}"
-        return "${int_exit_code}"
-    }
+    #     echo -e "${str_output}"
+    #     RestoreFile_Main $1
+    #     PrintPassOrFail "${str_output}"
+    #     return "${int_exit_code}"
+    # }
 
     # <summary> Write output to a file. Declare inherited params before calling this function. </summary>
     # <paramref name=$1> string: the name of the array </paramref>
