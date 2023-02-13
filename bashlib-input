@@ -10,6 +10,7 @@
 # <remarks> Using </remarks>
 # <code>
     source bashlib-globals
+    source bashlib-misc
     source bashlib-vars
 # </code>
 
