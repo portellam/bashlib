@@ -1,0 +1,397 @@
+#!/bin/bash sh
+
+#
+# Filename:         bashlib-globals
+# Description:      Global parameters.
+# Author(s):        Alex Portell <github.com/portellam>
+# Maintainer(s):    Alex Portell <github.com/portellam>
+#
+
+# <remarks> Using </remarks>
+# <code>
+    source bashlib-globals
+    source bashlib-vars
+# </code>
+
+# <code>
+    # <summary> Check if two given files are the same. If true, pass. </summary>
+    # <parameter name=$1> string: the file </parameter>
+    # <parameter name=$2> string: the other file </parameter>
+    # <returns> exit code </returns>
+    function AreEqualFiles
+    {
+        IsFile $2 || return $?
+        IsFile $1 || return $?
+
+        # <params>
+        local readonly var_command='cmp -s $1 $2'
+        # </params>
+
+        eval ! "${var_command}" || return 1
+        return 0
+    }
+
+    # <summary> Create latest backup of given file (do not exceed given maximum count). </summary>
+    # <parameter name=$1> string: the file </parameter>
+    # <returns> exit code </returns>
+    function BackupFile
+    {
+        function BackupFile_Main
+        {
+            IsFile $1 || return $?
+
+            # <params>
+            declare -ir int_max_count=4
+            local readonly str_dir=$( dirname $1 )
+            local readonly str_suffix=".old"
+            local readonly var_command='ls "${str_dir}" | grep $1 | grep $str_suffix | uniq | sort -V'
+            declare -a arr_dir=( $( eval "${var_command}" ) )
+            # </params>
+
+            IsNotEmptyArray "arr_dir" &> /dev/null || return $?
+
+            # <remarks> Create backup file if none exist. </remarks>
+            if [[ "${#arr_dir[@]}" -eq 0 ]]; then
+                cp $1 "${1}.${var_first_index}${str_suffix}" || return 1
+                return 0
+            fi
+
+            # <remarks> Oldest backup file is same as original file. </remarks>
+            AreEqualFiles $1 "${arr_dir[0]}" && return 0
+
+            # <remarks> Get index of oldest backup file. </remarks>
+            local str_oldest_file="${arr_dir[0]}"
+            str_oldest_file="${str_oldest_file%%"${str_suffix}"*}"
+            local var_first_index="${str_oldest_file##*.}"
+            IsNum "$var_first_index" || return $?
+
+            # <remarks> Delete older backup files, if total matches/exceeds maximum. </remarks>
+            while [[ "${#arr_dir[@]}" -gt "$int_max_count" ]]; do
+                DeleteFile "${arr_dir[0]}" || return $?
+                arr_dir=( $( eval "${var_command}" ) )
+            done
+
+            # <remarks> Increment number of last backup file index. </remarks>
+            local str_newest_file="${arr_dir[-1]}"
+            str_newest_file="${str_newest_file%%"${str_suffix}"*}"
+            local var_last_index="${str_newest_file##*.}"
+            IsNum "${var_last_index}" || return $?
+            (( var_last_index++ ))
+
+            # <remarks> Newest backup file is different and newer than original file. </remarks>
+            if ( ! AreEqualFiles $1 "${arr_dir[-1]}" &> /dev/null ) && [[ $1 -nt "${arr_dir[-1]}" ]]; then
+                cp $1 "${1}.${var_last_index}${str_suffix}" || return 1
+            fi
+
+            return 0
+        }
+
+        # <params>
+        local readonly str_output="Creating backup file..."
+        # </params>
+
+        echo -e "${str_output}"
+        BackupFile_Main $1
+        PrintPassOrFail "${str_output}"
+        return $?
+    }
+
+    # <summary> Create a directory. </summary>
+    # <param name=$1> string: the directory </param>
+    # <returns> exit code </returns>
+    function CreateDir
+    {
+        IsString $1 || return $?
+        IsDir $1 &> /dev/null && return 0
+
+        # <params>
+        local readonly str_fail="${var_prefix_fail} Could not create directory '${1}'."
+        local readonly var_command='mkdir -p $1'
+        # </params>
+
+        if ! eval "${var_command}"; then
+            echo -e "${str_fail}"
+            return 1
+        fi
+
+        return 0
+    }
+
+    # <summary> Create a file. </summary>
+    # <param name=$1> string: the file </param>
+    # <returns> exit code </returns>
+    function CreateFile
+    {
+        IsString $1 || return $?
+        IsFile $1 &> /dev/null && return 0
+
+        # <params>
+        local readonly str_fail="${var_prefix_fail} Could not create file '${1}'."
+        local readonly var_command='touch '"$1"' &> /dev/null'
+        # </params>
+
+        if ! eval "${var_command}"; then
+            echo -e "${str_fail}"
+            return 1
+        fi
+
+        return 0
+    }
+
+    # <summary> Delete a dir/file. </summary>
+    # <param name=$1> string: the file </param>
+    # <returns> exit code </returns>
+    function DeleteFile
+    {
+        IsString $1 || return $?
+        IsFile $1 &> /dev/null && return 0
+
+        # <params>
+        local readonly str_fail="${var_prefix_fail} Could not delete file '${1}'."
+        local readonly var_command='rm '"$1"
+        # </params>
+
+        if ! eval "${var_command}"; then
+            echo -e "${str_fail}"
+            return 1
+        fi
+
+        return 0
+    }
+
+    # <summary> Create a file. If true, pass. </summary>
+    # <param name=$1> string: the file </param>
+    # <param name=$2> string: the line </param>
+    # <returns> exit code </returns>
+    function FindLine
+    {
+        IsString $2 || return $?
+        IsFile $1 || return $?
+
+        # <params>
+        local readonly var_command='! -z $( grep -iF $2 $1 )'
+        # </params>
+
+        ! eval "${var_command}" || return 1
+        return 0
+    }
+
+    # <summary> Check if the directory exists. If true, pass. </summary>
+    # <param name=$1> string: the directory name </param>
+    # <returns> exit code </returns>
+    function IsDir
+    {
+        IsString $1 || return $?
+
+        # <params>
+        local readonly str_fail="${var_prefix_error} File '${1}' is not a directory."
+        # </params>
+
+        if [[ ! -d $1 ]]; then
+            echo -e "${str_fail}"
+            return "${int_code_dir_is_null}"
+        fi
+
+        return 0
+    }
+
+    # <summary> Check if the file exists. If true, pass. </summary>
+    # <param name=$1> string: the file name </param>
+    # <returns> exit code </returns>
+    function IsFile
+    {
+        IsString $1 || return $?
+
+        # <params>
+        local readonly str_fail="${var_prefix_error} '${1}' is not a file."
+        # </params>
+
+        if [[ ! -e $1 ]]; then
+            echo -e "${str_fail}"
+            return "${int_code_dir_is_null}"
+        fi
+
+        return 0
+    }
+
+    # <summary> Check if the file is executable. If true, pass. </summary>
+    # <param name=$1> string: the file name </param>
+    # <returns> exit code </returns>
+    function IsExecutableFile
+    {
+        IsFile $1 || return $?
+
+        # <params>
+        local readonly str_fail="${var_prefix_error} File '${1}' is not executable."
+        local readonly var_command='-x $1'
+        # </params>
+
+        if ! eval "${var_command}"; then
+            echo -e "${str_fail}"
+            return "${int_code_file_is_not_executable}"
+        fi
+
+        return 0
+    }
+
+    # <summary> Check if the file is readable. If true, pass. </summary>
+    # <param name=$1> string: the file name </param>
+    # <returns> exit code </returns>
+    function IsReadableFile
+    {
+        IsFile $1 || return $?
+
+        # <params>
+        local readonly str_fail="${var_prefix_error} File '${1}' is not readable."
+        local readonly var_command='-r $1'
+        # </params>
+
+        if ! eval "${var_command}"; then
+            echo -e "${str_fail}"
+            return "${int_code_file_is_not_readable}"
+        fi
+
+        return 0
+    }
+
+    # <summary> Check if the file is writable. If true, pass. </summary>
+    # <param name=$1> string: the file name </param>
+    # <returns> exit code </returns>
+    function IsWritableFile
+    {
+        IsFile $1 || return $?
+
+        # <params>
+        local readonly str_fail="${var_prefix_error} File '${1}' is not writable."
+        local readonly var_command='-w $1'
+        # </params>
+
+        if ! eval "${var_command}"; then
+            echo -e "${str_fail}"
+            return "${int_code_file_is_not_writable}"
+        fi
+
+        return 0
+    }
+
+    # <summary> Overwrite output to a file. Declare inherited params before calling this function. </summary>
+    # <paramref name=$1> string: the name of the array </paramref>
+    # <param name=$2> string: the name of the file </param>
+    # <returns> exit code </returns>
+    function OverwriteFile
+    {
+        IsNotEmptyArray $1 || return $?
+        DeleteFile $2
+        CreateFile $2 || return $?
+        WriteFile $1 $2
+        return $?
+    }
+
+    # <summary> Output a file. </summary>
+    # <param name=$1> string: the file </param>
+    # <returns> exit code </returns>
+    function PrintFile
+    {
+        IsFile $1 || return $?
+
+        # <params>
+        IFS=$'\n'
+        declare -a arr_print_file=( )
+        local readonly str_output="Contents for file ${var_yellow}'${1}'${var_reset_color}:"
+        # local readonly var_print_file='cat $1'
+        # </params>
+
+        echo -e "${str_output}"
+        ReadFile "arr_print_file" $1 || return $?
+        PrintArray "arr_print_file" || return $?
+        return 0
+    }
+
+    # <summary> Read input from a file. Declare inherited params before calling this function. </summary>
+    # <paramref name=$1> string: the name of the array </paramref>
+    # <param name=$2> string: the name of the file </param>
+    # <returns> exit code </returns>
+    function ReadFile
+    {
+        IsFile $2 || return $?
+        IsString $1 || return $?
+
+        # <params>
+        IFS=$'\n'
+        local readonly str_fail="${var_prefix_fail} Could not read from file '${2}'."
+        local readonly var_get_file='cat '"$2"                                                  # NOTE: I am confused. I need to take a break.
+        local readonly var_set_param="$1"'=( "${MAPFILE[@]}" )'
+        declare -a arr_read_file=( $( eval "${var_get_file}" ) )
+        # </params>
+
+        if ! IsNotEmptyArray "arr_read_file" &> /dev/null; then
+            echo -e "${str_fail}"
+            return 1
+        fi
+
+        eval "${var_set_param}" || return 1
+        return 0
+    }
+
+    # <summary> Restore latest valid backup of given file. </summary>
+    # <parameter name=$1> string: the name of the file </param>
+    # <returns> exit code </returns>
+    function RestoreFile
+    {
+        function RestoreFile_Main
+        {
+            IsFile $1 || return $?
+
+            # <params>
+            local bool=false
+            local readonly str_dir=$( dirname $1 )
+            local readonly str_suffix=".old"
+            var_command='ls "${str_dir}" | grep $1 | grep $str_suffix | uniq | sort -rV'
+            declare -a arr_dir=( $( eval "${var_command}" ) )
+            # </params>
+
+            IsNotEmptyArray "arr_dir" || return $?
+
+            for var_element in "${arr_dir[@]}"; do
+                IsFile "${var_element}" && cp "${var_element}" $1 && return 0
+            done
+
+            return 1
+        }
+
+        # <params>
+        local readonly str_output="Restoring backup file..."
+        # </params>
+
+        echo -e "${str_output}"
+        RestoreFile_Main $1
+        PrintPassOrFail "${str_output}"
+
+        return "${int_exit_code}"
+    }
+
+    # <summary> Write output to a file. Declare inherited params before calling this function. </summary>
+    # <paramref name=$1> string: the name of the array </paramref>
+    # <param name=$2> string: the name of the file </param>
+    # <returns> exit code </returns>
+    function WriteFile
+    {
+        IsFile $2 || return $?
+        IsNotEmptyArray $1 || return $?
+
+        # <params>
+        local readonly str_fail="${var_prefix_fail} Could not write to file '${1}'."
+        local readonly str_name_ref=$1
+        local readonly var_get_arr='( $( echo -e "${str_name_ref[@]}" ) )'
+        local readonly var_set_file='printf "%s\n" "${arr[@]}" >> $2'
+        declare -ar arr=( $( eval "${var_get_arr}" ) )
+        # </params>
+
+        if ! eval "${var_set_file}"; then
+            echo -e "${str_fail}"
+            return 1
+        fi
+
+        return 0
+    }
+# </code>
