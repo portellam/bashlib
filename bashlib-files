@@ -327,6 +327,7 @@
 
         echo -e "${str_output}"
         ReadFile "arr_print_file" $1 || return $?
+        echo -e ${arr_print_file[@]}
         PrintArray "arr_print_file"
         return $?
     }
@@ -343,12 +344,11 @@
         # <params>
         IFS=$'\n'
         local readonly str_fail="${var_prefix_fail} Could not read from file '${2}'."
-        local readonly var_get_file='cat '"$2"                                                  # NOTE: I am confused. I need to take a break.
+        local readonly var_mapfile='mapfile -t < <( cat '"$2"' )'
         local readonly var_set_param="$1"'=( "${MAPFILE[@]}" )'
-        declare -a arr_read_file=( $( eval "${var_get_file}" ) )
         # </params>
 
-        if ! IsArray "arr_read_file" &> /dev/null; then
+        if ! eval "${var_mapfile}" || ! IsArray "MAPFILE" &> /dev/null; then
             echo -e "${str_fail}"
             return 1
         fi
