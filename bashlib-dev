@@ -87,7 +87,7 @@
         local readonly str_backup_file="${1}.bak"
         # </params>
 
-        # <summary> Original system file does not exist. </summary>
+        # <remarks> Original system file does not exist. </remarks>
         if $bool_is_connected_to_Internet && ! IsFile $1; then
             InstallPackage $2 true && bool_system_file_is_original=true
         fi
@@ -102,19 +102,19 @@
             return 1
         fi
 
-        # <summary> It is unknown if system file *is* original. </summary>
+        # <remarks> It is unknown if system file *is* original. </remarks>
         if $bool_is_connected_to_Internet && $bool_backup_file_exists && ! $bool_system_file_is_original; then
             DeleteFile $1
             InstallPackage $2 true && bool_system_file_is_original=true
         fi
 
-        # <summary> System file *is not* original. Attempt to restore backup. </summary>
+        # <remarks> System file *is not* original. Attempt to restore backup. </remarks>
         if $bool_backup_file_exists && ! $bool_system_file_is_original; then
             # RestoreFile $1                                          # RestoreFile is broken?
             cp "${str_backup_file}" $1 || return 1
         fi
 
-        # <summary> Do no work. </summary>
+        # <remarks> Do no work. </remarks>
         # if ! $bool_backup_file_exists || ! $bool_system_file_is_original; then
         #     return 1
         # fi
@@ -145,7 +145,7 @@
 
         IsBool $2 &> /dev/null && bool_option_reinstall=true
 
-        # <summary> Auto-update and auto-install selected packages </summary>
+        # <remarks> Auto-update and auto-install selected packages </remarks>
         case "${str_package_manager}" in
             "apt" )
                 local readonly str_option="--reinstall -o Dpkg::Options::=--force-confmiss"
@@ -332,10 +332,10 @@
         local readonly str_fail="${var_prefix_fail}: Command '${str_package_manager}' is not supported."
         # </params>
 
-        # <summary> Auto-update and auto-install selected packages </summary>
+        # <remarks> Uninstall selected packages </remarks>
         case "${str_package_manager}" in
             "apt" )
-                str_commands_to_execute="apt uninstall -y ${1}"
+                str_commands_to_execute="apt uninstall ${1}"
                 ;;
 
             "dnf" )
