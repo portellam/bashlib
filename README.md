@@ -23,9 +23,9 @@ Collection of custom functions to be used as libraries for Bash scripts.
 ### bashlib-vars: Data-type and variable validation
 * Variables
     * Array Boolean, String, Number
-    * Is Not Empty, Is Not Null, Is Not Readonly [2]
+    * Is Not Empty, Is Not Readonly [2]
 * Arrays
-    * Is Not Empty [2] , Print [2]
+    * Is Not Empty [2], Print [2]
 
 ### bashlib-proc: Process/library validation
 * Commands, Daemons, Processes
@@ -33,7 +33,7 @@ Collection of custom functions to be used as libraries for Bash scripts.
 
 ### bashlib-files: File operation and validation
 * Files
-    * Are Equal, Backup, Create Delete, Is File, Is Executable/Readable/Writable, Overwrite [2] , Print, Read [2] , Restore, Write [2]
+    * Are Equal, Backup, Create Delete, Is File, Is Executable/Readable/Writable, Overwrite [2], Print, Read [2], Restore, Write [2]
 * Directories
     * Create
     * Is Directory
