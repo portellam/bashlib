@@ -22,7 +22,7 @@
     function ReadInput
     {
         # <params>
-        declare -i int_max_tries=3
+        declare -i int_max_tries=2
         declare -ar arr_count=( $( seq 0 "${int_max_tries}" ) )
         local readonly str_no="N"
         local readonly str_yes="Y"
@@ -71,7 +71,7 @@
     function ReadInputFromRangeOfTwoNums
     {
         # <params>
-        declare -i int_max_tries=3
+        declare -i int_max_tries=2
         declare -ar arr_count=( $( seq 0 "${int_max_tries}" ) )
         local readonly var_min=$2
         local readonly var_max=$3
@@ -121,7 +121,7 @@
     function ReadMultipleChoiceIgnoreCase
     {
         # <params>
-        declare -i int_max_tries=3
+        declare -i int_max_tries=2
         declare -ar arr_count=( $( seq 0 "${int_max_tries}" ) )
         declare -a arr_input=( )
         local str_output=""
@@ -185,7 +185,7 @@
     function ReadMultipleChoiceMatchCase
     {
         # <params>
-        declare -i int_max_tries=3
+        declare -i int_max_tries=2
         declare -ar arr_count=( $( seq 0 "${int_max_tries}" ) )
         declare -a arr_input=( )
         local str_output=""
