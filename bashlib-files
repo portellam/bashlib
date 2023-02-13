@@ -27,7 +27,7 @@
         local readonly var_command='cmp -s $1 $2'
         # </params>
 
-        eval ! "${var_command}" || return 1
+        eval "${var_command}" || return 1
         return 0
     }
 
