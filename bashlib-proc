@@ -14,6 +14,27 @@
 # </code>
 
 # <code>
+    # <summary> Check if the command is active. </summary>
+    # <param name=$1> string: the command </param>
+    # <returns> exit code </returns>
+    function IsActiveCommand
+    {
+        IsString $1 || return $?
+
+        # <params>
+        local readonly str_fail="${var_prefix_error} Process '${1}' is not active."
+        local readonly var_command='ps -e | grep ${1}'
+        local readonly str_output=$( eval "${var_command}" )
+        # </params>
+
+        if ! IsString "${str_output}" &> /dev/null; then
+            echo -e "${str_fail}"
+            return "${int_code_cmd_is_null}"
+        fi
+
+        return 0
+    }
+
     # <summary> Check if the daemon is active or not. </summary>
     # <param name=$1> string: the command </param>
     # <returns> exit code </returns>
@@ -75,27 +96,6 @@
         # <params>
         local readonly str_fail="${var_prefix_error} Daemon '${1}' is not installed."
         local readonly var_command='systemctl status ${1} | grep -Eiv "not"'
-        local readonly str_output=$( eval "${var_command}" )
-        # </params>
-
-        if ! IsString "${str_output}"; then
-            echo -e "${str_fail}"
-            return "${int_code_cmd_is_null}"
-        fi
-
-        return 0
-    }
-
-    # <summary> Check if the process is active. </summary>
-    # <param name=$1> string: the command </param>
-    # <returns> exit code </returns>
-    function IsInstalledProcess
-    {
-        IsString $1 || return $?
-
-        # <params>
-        local readonly str_fail="${var_prefix_error} Process '${1}' is not active."
-        local readonly var_command='ps -e | grep ${1}'
         local readonly str_output=$( eval "${var_command}" )
         # </params>
 
