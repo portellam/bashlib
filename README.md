@@ -3,8 +3,8 @@ Collection of custom functions to be used as libraries for Bash scripts.
 
 ## How-to
 * Clone
-* Use any a source [1]
-    * Example: invoke "source bashlib-all" for all functions.
+* Use any a source [1], example:
+    "source bashlib-all"
 
 [1]
 
