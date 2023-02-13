@@ -93,7 +93,7 @@
         echo -e "${str_output}"
         BackupFile_Main $1
         PrintPassOrFail "${str_output}"
-        return $?
+        return "${int_exit_code}"
     }
 
     # <summary> Create a directory. </summary>
@@ -303,8 +303,8 @@
 
         echo -e "${str_output}"
         ReadFile "arr_print_file" $1 || return $?
-        PrintArray "arr_print_file" || return $?
-        return 0
+        PrintArray "arr_print_file"
+        return $?
     }
 
     # <summary> Read input from a file. Declare inherited params before calling this function. </summary>
@@ -329,8 +329,8 @@
             return 1
         fi
 
-        eval "${var_set_param}" || return 1
-        return 0
+        eval "${var_set_param}"
+        return $?
     }
 
     # <summary> Restore latest valid backup of given file. </summary>
@@ -366,7 +366,6 @@
         echo -e "${str_output}"
         RestoreFile_Main $1
         PrintPassOrFail "${str_output}"
-
         return "${int_exit_code}"
     }
 
