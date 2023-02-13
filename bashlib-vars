@@ -23,26 +23,14 @@
         # <params>
         local readonly str_fail="${var_prefix_error} Empty array."
         local readonly var_get_array='echo "${'$1'[@]}"'
+        local readonly var_get_array_len='echo "${#'$1'[@]}"'
         # </params>
 
         for var_element in $( eval "${var_get_array}" ); do
-            IsString "${var_element}" &> /dev/null && return 0
+            IsString "${var_element}" && return $?
         done
 
-        echo -e "${str_fail}"
-        return "${int_code_var_is_empty}"
-    }
-
-    # <summary> Check if the variable is not empty. If true, pass. </summary>
-    # <param name=$1> var: the variable </param>
-    # <returns> exit code </returns>
-    function IsEmptyVar
-    {
-        # <params>
-        local readonly str_fail="${var_prefix_error} Empty string."
-        # </params>
-
-        if [[ $1 == "" ]]; then
+        if [[ $( eval "${var_get_array_len}" ) -eq 0 ]]; then
             echo -e "${str_fail}"
             return "${int_code_var_is_empty}"
         fi
@@ -50,18 +38,19 @@
         return 0
     }
 
-    # <summary> Check if the variable is not null. If true, pass. </summary>
+    # <summary> Check if the variable is not empty. If true, pass. </summary>
     # <param name=$1> var: the variable </param>
     # <returns> exit code </returns>
-    function IsNotNullVar
+    function IsString
     {
         # <params>
-        local readonly str_fail="${var_prefix_error} Null string."
+        local readonly str_fail="${var_prefix_error} Empty string."
+        local readonly var="${1}"
         # </params>
 
-        if [[ -z $1 ]]; then
+        if [[ "${#var}" -eq 0 && "${var}" == "" ]]; then
             echo -e "${str_fail}"
-            return "${int_code_var_is_null}"
+            return "${int_code_var_is_empty}"
         fi
 
         return 0
@@ -107,16 +96,6 @@
             return "${int_code_var_is_NAN}"
         fi
 
-        return 0
-    }
-
-    # <summary> Check if the variable is valid. If true, pass. </summary>
-    # <param name=$1> var: the variable </param>
-    # <returns> exit code </returns>
-    function IsString
-    {
-        # IsNotNullVar $1 || return $?
-        IsEmptyVar $1 || return $?
         return 0
     }
 
