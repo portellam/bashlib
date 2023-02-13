@@ -8,10 +8,9 @@ Collection of custom functions to be used as libraries for Bash scripts.
 
     "source bashlib-all"
 
-[1]
-
-    https://www.gnu.org/software/bash/manual/bash.html#index-source
-    https://linuxize.com/post/bash-source-command/
+[1] Documentation
+* https://www.gnu.org/software/bash/manual/bash.html#index-source
+* https://linuxize.com/post/bash-source-command/
 
 
 ## Libraries
