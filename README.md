@@ -3,7 +3,7 @@ Collection of custom functions to be used as libraries for Bash scripts.
 
 ## How-to
 * Clone
-* Use any a source [1]
+* Use as a source [1]
 
 [1] Documentation
 * https://www.gnu.org/software/bash/manual/bash.html#index-source
