@@ -166,18 +166,14 @@
         return 0
     }
 
-    # <summary> Create a file. If true, pass. </summary>
+    # <summary> Find line in file. </summary>
     # <param name=$1> string: the file </param>
     # <param name=$2> string: the line </param>
     # <returns> exit code </returns>
-    function FindLine
+    function FindLineInFile
     {
         IsString $2 || return $?
         IsFile $1 || return $?
-
-        # <params>
-        local readonly var_command='! -z $( grep -iF $2 $1 )'
-        # </params>
 
         if [[ -z $( grep -iF $2 $1 ) ]]; then
             return 1
@@ -319,7 +315,7 @@
         return 0
     }
 
-    # <summary> Overwrite output to a file. Declare inherited params before calling this function. </summary>
+    # <summary> Overwrite output to a file. </summary>
     # <paramref name=$1> string: the name of the array </paramref>
     # <param name=$2> string: the name of the file </param>
     # <returns> exit code </returns>
@@ -362,17 +358,37 @@
         # <params>
         IFS=$'\n'
         local readonly str_fail="${var_prefix_fail} Could not read from file '${2}'."
-        local readonly var_mapfile='mapfile -t < <( cat '"$2"' )'
+        local readonly var_get_param='mapfile -t < <( cat '"$2"' )'
         local readonly var_set_param="$1"'=( "${MAPFILE[@]}" )'
         # </params>
 
-        if ! eval "${var_mapfile}" || ! IsArray "MAPFILE" &> /dev/null; then
+        if ! eval "${var_get_param}" || ! IsArray "MAPFILE" &> /dev/null; then
             echo -e "${str_fail}"
             return 1
         fi
 
         eval "${var_set_param}"
         return $?
+    }
+
+    # <summary> Replace line in an file. </summary>
+    # <param name=$1> string: the name of the file </param>
+    # <param name=$2> string: the line </param>
+    # <param name=$3> string: the new line </param>
+    # <returns> exit code </returns>
+    function ReplaceLineInFile
+    {
+        IsString $3 || return $?    # NOTE: keep. Exit early.
+        # IsString $2 || return $?  # TODO: remove. This parameter will be validated in ReplaceLineInArray.
+        # IsFile $1 || return $?    # TODO: remove. This parameter will be validated in ReadFile
+
+        # <params>
+        declare -a arr_replace_file=()
+        # </params>
+
+        ReadFile "arr_replace_file" $1 || return $?
+        ReplaceLineInArray "arr_replace_file" $2 $3 || return $?
+        return 0
     }
 
     # <summary> Restore latest valid backup of given file. </summary>
@@ -399,8 +415,8 @@
 
             # <remarks> If newest backup is newer than file, restore. </remarks>
             if ! AreEqualFiles $1 "${arr_dir[0]}" &> /dev/null || IsFileNewer "${arr_dir[0]}" $1 &> /dev/null ; then
-                 cp "${1}${str_suffix}" $1
-                 return $?
+                cp "${1}${str_suffix}" $1
+                return $?
             fi
 
             return "${int_code_skipped_operation}"
@@ -427,10 +443,10 @@
 
         # <params>
         local readonly str_fail="${var_prefix_fail} Could not write to file '${1}'."
-        local readonly var_set_file='printf "%s\n" "${'$1'[@]}" >> $2'
+        local readonly var_set_param='printf "%s\n" "${'$1'[@]}" >> $2'
         # </params>
 
-        if ! eval "${var_set_file}"; then
+        if ! eval "${var_set_param}"; then
             echo -e "${str_fail}"
             return 1
         fi
