@@ -16,15 +16,14 @@
 # <code>
     # <summary> Check if the command is active. </summary>
     # <param name=$1> string: the command </param>
-    # <returns> exit code </returns>
     function IsActiveCommand
     {
         IsString $1 || return $?
 
         # <params>
-        local readonly str_fail="${var_prefix_error} Process '${1}' is not active."
-        local readonly var_command='ps -e | grep ${1}'
-        local readonly str_output=$( eval "${var_command}" )
+        local str_fail="${var_prefix_error} Process '${1}' is not active."
+        local var_command='ps -e | grep ${1}'
+        local str_output=$( eval "${var_command}" )
         # </params>
 
         if ! IsString "${str_output}" &> /dev/null; then
@@ -37,17 +36,16 @@
 
     # <summary> Check if the daemon is active or not. </summary>
     # <param name=$1> string: the command </param>
-    # <returns> exit code </returns>
     function IsActiveDaemon
     {
         IsString $1 || return $?
 
         # <params>
-        local readonly str_active='active'
-        local readonly str_failed='failed'
-        local readonly str_inactive='inactive'
-        local readonly var_command='systemctl status ${1} | grep "${str_active}"'
-        local readonly str_output=$( eval "${var_command}" )
+        local str_active='active'
+        local str_failed='failed'
+        local str_inactive='inactive'
+        local var_command='systemctl status ${1} | grep "${str_active}"'
+        local str_output=$( eval "${var_command}" )
         # </params>
 
         IsString "${var_command}" || return $?
@@ -67,15 +65,14 @@
 
     # <summary> Check if the command is installed. </summary>
     # <param name=$1> string: the command </param>
-    # <returns> exit code </returns>
     function IsInstalledCommand
     {
         IsString $1 || return $?
 
         # <params>
-        local readonly str_fail="${var_prefix_error} Command '${1}' is not installed."
-        local readonly str_actual=$( command -v $1 )
-        local readonly str_expected="/usr/bin/${1}"
+        local str_fail="${var_prefix_error} Command '${1}' is not installed."
+        local str_actual=$( command -v $1 )
+        local str_expected="/usr/bin/${1}"
         # </params>
 
         if [[ "${str_actual}" != "${str_expected}" ]]; then
@@ -88,15 +85,14 @@
 
     # <summary> Check if the daemon is installed. </summary>
     # <param name=$1> string: the command </param>
-    # <returns> exit code </returns>
     function IsInstalledDaemon
     {
         IsString $1 || return $?
 
         # <params>
-        local readonly str_fail="${var_prefix_error} Daemon '${1}' is not installed."
-        local readonly var_command='systemctl status ${1} | grep -Eiv "not"'
-        local readonly str_output=$( eval "${var_command}" )
+        local str_fail="${var_prefix_error} Daemon '${1}' is not installed."
+        local var_command='systemctl status ${1} | grep -Eiv "not"'
+        local str_output=$( eval "${var_command}" )
         # </params>
 
         if ! IsString "${str_output}"; then

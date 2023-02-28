@@ -17,15 +17,14 @@
 # <code>
     # <summary> Distro-agnostic, Check if package exists on-line. </summary>
     # <param name=$1> string: the software package(s) </param>
-    # <returns> exit code </returns>
     function FindPackage
     {
         ( IsString $1 && IsString "${str_package_manager}" )|| return $?
 
         # <params>
         local str_commands_to_execute=""
-        local readonly str_output_invalid_package_manager="${var_prefix_fail}: Command '${str_package_manager}' is not supported."
-        local readonly str_output_invalid_package="${var_prefix_fail}: Package(s) '${str_package_manager}' was/were not found."
+        local str_output_invalid_package_manager="${var_prefix_fail}: Command '${str_package_manager}' is not supported."
+        local str_output_invalid_package="${var_prefix_fail}: Package(s) '${str_package_manager}' was/were not found."
         # </params>
 
         case "${str_package_manager}" in
@@ -71,116 +70,8 @@
         return 0
     }
 
-    # <summary> Check if system file is original or not. </summary>
-    # <parameter name=$1> string: the system file </parameter>
-    # <parameter name=$2> string: the software package(s) to install </parameter>
-    # <parameter name="${bool_is_connected_to_Internet}"> boolean: GetInternetStatus </parameter>
-    # <returns> exit code </returns>
-    function IsFileOriginal
-    {
-        IsString $2 || return $?
-        IsString $1 || return $?
-
-        # <params>
-        local bool_backup_file_exists=false
-        local bool_system_file_is_original=false
-        # </params>
-
-        # <remarks> Original system file does not exist. </remarks>
-        if $bool_is_connected_to_Internet && ! IsFile $1; then
-            InstallPackage $2 true && bool_system_file_is_original=true
-        fi
-
-        # <remarks> Backup system file. </remarks>
-        if BackupFile $1; then
-            bool_backup_file_exists=true
-        fi
-
-        # <remarks> Do no work. </remarks>
-        if ! $bool_backup_file_exists || ! $bool_system_file_is_original; then
-            return 1
-        fi
-
-        # <remarks> It is unknown if system file *is* original. </remarks>
-        if $bool_is_connected_to_Internet && $bool_backup_file_exists && ! $bool_system_file_is_original; then
-            DeleteFile $1
-            InstallPackage $2 true && bool_system_file_is_original=true
-        fi
-
-        # <remarks> System file *is not* original. Attempt to restore backup. </remarks>
-        if $bool_backup_file_exists && ! $bool_system_file_is_original; then
-            RestoreFile $1
-            return $?
-        fi
-
-        return 0
-    }
-
-    # <summary> Distro-agnostic, Install a software package. </summary>
-    # <param name=$1> string: the software package(s) </param>
-    # <param name=$2> boolean: true/false do/don't reinstall software package and configuration files (if possible) </param>
-    # <param name="${str_package_manager}"> string: the package manager </param>
-    # <returns> exit code </returns>
-    function InstallPackage
-    {
-        IsString "${str_package_manager}" || return $?
-        IsString $1 || return $?
-
-        # <params>
-        local bool_option_reinstall=false
-        local str_commands_to_execute=""
-        local readonly str_output="Installing software packages..."
-        local readonly str_fail="${var_prefix_fail}: Command '${str_package_manager}' is not supported."
-        # </params>
-
-        IsBool $2 &> /dev/null && bool_option_reinstall=true
-
-        # <remarks> Auto-update and auto-install selected packages </remarks>
-        case "${str_package_manager}" in
-            "apt" )
-                local readonly str_option="--reinstall -o Dpkg::Options::=--force-confmiss"
-                str_commands_to_execute="apt update && apt full-upgrade -y && apt install ${str_option} -y ${1}"
-                ;;
-
-            "dnf" )
-                str_commands_to_execute="dnf upgrade && dnf install ${1}"
-                ;;
-
-            "pacman" )
-                str_commands_to_execute="pacman -Syu && pacman -S ${1}"
-                ;;
-
-            "gentoo" )
-                str_commands_to_execute="emerge -u @world && emerge ${1}"
-                ;;
-
-            "urpmi" )
-                str_commands_to_execute="urpmi --auto-update && urpmi ${1}"
-                ;;
-
-            "yum" )
-                str_commands_to_execute="yum update && yum install ${1}"
-                ;;
-
-            "zypper" )
-                str_commands_to_execute="zypper refresh && zypper in ${1}"
-                ;;
-
-            * )
-                echo -e "${str_fail}"
-                return 1
-                ;;
-        esac
-
-        echo "${str_output}"
-        eval "${str_commands_to_execute}" || ( return 1 )
-        PrintPassOrFail "${str_output}"
-        return $?
-    }
-
     # <summary> Test network connection to Internet. Ping DNS servers by address and name. </summary>
     # <param name=$1> boolean: true/false toggle verbosity </param>
-    # <returns> exit code </returns>
     function GetInternetStatus
     {
         function GetInternetStatus_PingServer
@@ -233,20 +124,19 @@
     }
 
     # <summary> Check if current kernel and distro are supported, and if the expected Package Manager is installed. </summary>
-    # <returns> exit code </returns>
     function GetLinuxDistro
     {
         # <params>
-        local readonly str_kernel="$( uname -o | tr '[:upper:]' '[:lower:]' )"
-        local readonly str_operating_system="$( lsb_release -is | tr '[:upper:]' '[:lower:]' )"
-        local readonly str_output_distro_is_not_valid="${var_prefix_error} Distribution '$( lsb_release -is )' is not supported."
-        local readonly str_output_kernel_is_not_valid="${var_prefix_error} Kernel '$( uname -o )' is not supported."
-        local readonly str_OS_with_apt="debian bodhi deepin knoppix mint peppermint pop ubuntu kubuntu lubuntu xubuntu "
-        local readonly str_OS_with_dnf_yum="redhat berry centos cern clearos elastix fedora fermi frameos mageia opensuse oracle scientific suse"
-        local readonly str_OS_with_pacman="arch manjaro"
-        local readonly str_OS_with_portage="gentoo"
-        local readonly str_OS_with_urpmi="opensuse"
-        local readonly str_OS_with_zypper="mandriva mageia"
+        local str_kernel="$( uname -o | tr '[:upper:]' '[:lower:]' )"
+        local str_operating_system="$( lsb_release -is | tr '[:upper:]' '[:lower:]' )"
+        local str_output_distro_is_not_valid="${var_prefix_error} Distribution '$( lsb_release -is )' is not supported."
+        local str_output_kernel_is_not_valid="${var_prefix_error} Kernel '$( uname -o )' is not supported."
+        local str_OS_with_apt="debian bodhi deepin knoppix mint peppermint pop ubuntu kubuntu lubuntu xubuntu "
+        local str_OS_with_dnf_yum="redhat berry centos cern clearos elastix fedora fermi frameos mageia opensuse oracle scientific suse"
+        local str_OS_with_pacman="arch manjaro"
+        local str_OS_with_portage="gentoo"
+        local str_OS_with_urpmi="opensuse"
+        local str_OS_with_zypper="mandriva mageia"
         # </params>
 
         if ! IsString "${str_kernel}" &> /dev/null || ! IsString "${str_operating_system}" &> /dev/null; then
@@ -299,9 +189,140 @@
         return 0
     }
 
+    # <summary> Check if system file is original or not. </summary>
+    # <parameter name=$1> string: the system file </parameter>
+    # <parameter name=$2> string: the software package(s) to install </parameter>
+    # <parameter name="${bool_is_connected_to_Internet}"> boolean: GetInternetStatus </parameter>
+    function IsFileOriginal
+    {
+        IsString $2 || return $?
+        IsString $1 || return $?
+
+        # <params>
+        local bool_backup_file_exists=false
+        local bool_system_file_is_original=false
+        # </params>
+
+        # <remarks> Original system file does not exist. </remarks>
+        if $bool_is_connected_to_Internet && ! IsFile $1; then
+            InstallPackage $2 true && bool_system_file_is_original=true
+        fi
+
+        # <remarks> Backup system file. </remarks>
+        if BackupFile $1; then
+            bool_backup_file_exists=true
+        fi
+
+        # <remarks> Do no work. </remarks>
+        if ! $bool_backup_file_exists && ! $bool_system_file_is_original; then
+            return 1
+        fi
+
+        # <remarks> It is unknown if system file *is* original. </remarks>
+        if $bool_is_connected_to_Internet && $bool_backup_file_exists && ! $bool_system_file_is_original; then
+            DeleteFile $1
+            InstallPackage $2 true && bool_system_file_is_original=true
+        fi
+
+        # <remarks> System file *is not* original. Attempt to restore backup. </remarks>
+        if $bool_backup_file_exists && ! $bool_system_file_is_original; then
+            RestoreFile $1
+            return $?
+        fi
+
+        return 0
+    }
+
+    # <summary> Distro-agnostic, check if package is installed. </summary>
+    # <param name=$1> string: the software package(s) </param>
+    # <param name="${str_package_manager}"> string: the package manager </param>
+    function IsInstalledPackage
+    {
+        IsString "${str_package_manager}" || return $?
+        IsString $1 || return $?
+
+        # <params>
+        local str_fail="${var_prefix_fail}: Command '${str_package_manager}' is not supported."
+        # </params>
+
+        # <remarks> Check if package is not installed </remarks>
+        case "${str_package_manager}" in
+            "apt" )
+                dpkg -s $1 &> /dev/null || InstallPackage $1 || return $?
+                ;;
+
+            * )
+                echo -e "${str_fail}"
+                return 1
+                ;;
+        esac
+
+        return 0
+    }
+
+    # <summary> Distro-agnostic, Install a software package. </summary>
+    # <param name=$1> string: the software package(s) </param>
+    # <param name=$2> boolean: true/false do/don't reinstall software package and configuration files (if possible) </param>
+    # <param name="${str_package_manager}"> string: the package manager </param>
+    function InstallPackage
+    {
+        IsString "${str_package_manager}" || return $?
+        IsString $1 || return $?
+
+        # <params>
+        local bool_option_reinstall=false
+        local str_commands_to_execute=""
+        local str_output="Installing software packages..."
+        local str_fail="${var_prefix_fail}: Command '${str_package_manager}' is not supported."
+        # </params>
+
+        IsBool $2 &> /dev/null && bool_option_reinstall=true
+
+        # <remarks> Auto-update and auto-install selected packages </remarks>
+        case "${str_package_manager}" in
+            "apt" )
+                local str_option="--reinstall -o Dpkg::Options::=--force-confmiss"
+                str_commands_to_execute="apt update && apt full-upgrade -y && apt install ${str_option} -y ${1}"
+                ;;
+
+            "dnf" )
+                str_commands_to_execute="dnf upgrade && dnf install ${1}"
+                ;;
+
+            "pacman" )
+                str_commands_to_execute="pacman -Syu && pacman -S ${1}"
+                ;;
+
+            "gentoo" )
+                str_commands_to_execute="emerge -u @world && emerge ${1}"
+                ;;
+
+            "urpmi" )
+                str_commands_to_execute="urpmi --auto-update && urpmi ${1}"
+                ;;
+
+            "yum" )
+                str_commands_to_execute="yum update && yum install ${1}"
+                ;;
+
+            "zypper" )
+                str_commands_to_execute="zypper refresh && zypper in ${1}"
+                ;;
+
+            * )
+                echo -e "${str_fail}"
+                return 1
+                ;;
+        esac
+
+        echo "${str_output}"
+        eval "${str_commands_to_execute}" || ( return 1 )
+        PrintPassOrFail "${str_output}"
+        return $?
+    }
+
     # <summary> Update GetInternetStatus </summary>
     # <param name="${bool_is_connected_to_Internet}"> boolean: network status </param>
-    # <returns> exit code </returns>
     function SetInternetStatus
     {
         ( StopEvalAfterThriceFail "GetInternetStatus true" && bool_is_connected_to_Internet=true ) || bool_is_connected_to_Internet=false
@@ -310,7 +331,6 @@
     # <summary> Distro-agnostic, Uninstall a software package. </summary>
     # <param name=$1> string: the software package(s) </param>
     # <param name="${str_package_manager}"> string: the package manager </param>
-    # <returns> exit code </returns>
     function UninstallPackage
     {
         IsString "${str_package_manager}" || return $?
@@ -318,8 +338,8 @@
 
         # <params>
         local str_commands_to_execute=""
-        local readonly str_output="Uninstalling software packages..."
-        local readonly str_fail="${var_prefix_fail}: Command '${str_package_manager}' is not supported."
+        local str_output="Uninstalling software packages..."
+        local str_fail="${var_prefix_fail}: Command '${str_package_manager}' is not supported."
         # </params>
 
         # <remarks> Uninstall selected packages </remarks>
@@ -368,14 +388,13 @@
     # <param name=$1> string: the directory </param>
     # <param name=$2> string: the full repo name </param>
     # <param name=$3> string: the username </param>
-    # <returns> exit code </returns>
     function UpdateOrCloneGitRepo
     {
         CreateDir "${1}${3}"
 
         # <summary> Update existing GitHub repository. </summary>
         if IsDir "${1}${2}" &> /dev/null; then
-            local readonly var_command="git pull"
+            local var_command="git pull"
 
             cd "${1}${2}" && StopEvalAfterThriceFail $( eval "${var_command}" ) &> /dev/null
             return $?
@@ -383,7 +402,7 @@
         # <summary> Clone new GitHub repository. </summary>
         elif IsDir "${1}${3}" &> /dev/null; then
             if ReadInput "Clone repo '${2}'?"; then
-                local readonly var_command="git clone https://github.com/${2}"
+                local var_command="git clone https://github.com/${2}"
 
                 cd "${1}${3}" && StopEvalAfterThriceFail $( eval "${var_command}" ) &> /dev/null
                 return $?

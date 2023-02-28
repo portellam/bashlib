@@ -16,11 +16,10 @@
 # <code>
     # <summary> Redirect current directory to shell script root directory. </summary>
     # <param name="${0}"> string: the shell script name </param>
-    # <returns> exit code </returns>
     function GoToScriptDir
     {
         # <params>
-        local readonly str_dir=$( dirname "${0}" )
+        local str_dir=$( dirname "${0}" )
         # </params>
 
         cd "${str_dir}" || return 1
@@ -83,7 +82,6 @@
 
     # <summary> Attempt given command a given number of times before failure. </summary>
     # <param name=$1> string: the command to execute </param>
-    # <returns> exit code </returns>
     function StopEvalAfterThriceFail        # NEEDS WORK
     {
         IsString $1 || return $?
@@ -92,7 +90,7 @@
         declare -ir int_min_count=1
         declare -ir int_max_count=3
         declare -ar arr_count=$( eval echo {$int_min_count..$int_max_count} )
-        local readonly str_fail="${var_prefix_error} Execution of command failed."
+        local str_fail="${var_prefix_error} Execution of command failed."
         # </params>
 
         for int_count in ${arr_count[@]}; do
