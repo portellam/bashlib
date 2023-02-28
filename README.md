@@ -1,3 +1,6 @@
+## Status
+work-in-progress
+
 ## Description
 Collection of custom functions to be used as libraries for Bash scripts.
 
