@@ -8,6 +8,13 @@
 #
 
 # <params>
+    # <summary> Constants </summary>
+    declare -gi int_max_tries=2
+    declare -ag arr_count_tries=( $( seq 0 "${int_max_tries}" ) )
+
+    # <summary> Directories </summary>
+    declare -g str_script_dir
+
     # <summary> Exit codes </summary>
     declare -gi int_code_partial_completion=255
     declare -gi int_code_skipped_operation=254
@@ -40,10 +47,10 @@
     declare -g var_prefix_fail="${var_red}Failure:${var_reset_color}"
     declare -g var_prefix_pass="${var_green}Success:${var_reset_color}"
     declare -g var_prefix_warn="${var_blinking_red}Warning:${var_reset_color}"
-    declare -g var_suffix_fail="${var_red}Failure${var_reset_color}"
-    declare -g var_suffix_maybe="${var_yellow}Incomplete${var_reset_color}"
-    declare -g var_suffix_pass="${var_green}Success${var_reset_color}"
-    declare -g var_suffix_skip="${var_yellow}Skipped${var_reset_color}"
+    declare -g var_suffix_fail="${var_red}[Failure]${var_reset_color}"
+    declare -g var_suffix_maybe="${var_yellow}[Incomplete]${var_reset_color}"
+    declare -g var_suffix_pass="${var_green}[Success]${var_reset_color}"
+    declare -g var_suffix_skip="${var_yellow}[Skipped]${var_reset_color}"
 
     # <summary> Output statement </summary>
     declare -g str_output_partial_completion="${var_prefix_warn} One or more operations failed."
